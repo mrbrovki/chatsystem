@@ -10,17 +10,15 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
 
-@Document(collection = "users")
+@Document(collection = "group_chats")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User {
-
+public class GroupChat {
     @Id
-    private ObjectId userId;
-    private String email;
-    private String hashedPassword;
-    private List<ObjectId> groupChats;
-    private List<String> chats;
+    private ObjectId id;
+    private List<ObjectId> memberIds;
+    private String name;
+    private String hostId;
 }

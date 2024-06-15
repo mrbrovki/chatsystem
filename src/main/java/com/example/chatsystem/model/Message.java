@@ -8,19 +8,22 @@ import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.List;
-
-@Document(collection = "users")
+import java.time.LocalDateTime;
+@Document
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User {
-
+public class Message {
     @Id
-    private ObjectId userId;
-    private String email;
-    private String hashedPassword;
-    private List<ObjectId> groupChats;
-    private List<String> chats;
+    private String id;
+    private LocalDateTime timestamp;
+
+    private String message;
+
+    private ObjectId senderId;
+
+    private ObjectId receiverId;
+
+    private Message type;
 }
