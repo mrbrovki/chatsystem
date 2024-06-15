@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class ChatResponseDTO {
     String name;
-    String hostId;
     String id;
     MessageType type;
 }
