@@ -25,5 +25,5 @@ public class Message {
 
     private ObjectId receiverId;
 
-    private Message type;
+    private MessageType type;
 }

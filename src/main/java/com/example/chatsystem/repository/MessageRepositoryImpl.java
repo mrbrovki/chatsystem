@@ -10,7 +10,7 @@ import java.util.List;
 
 @Repository
 public class MessageRepositoryImpl implements MessageRepository{
-    private MongoTemplate mongoTemplate;
+    private final MongoTemplate mongoTemplate;
 
     @Autowired
     public MessageRepositoryImpl(MongoTemplate mongoTemplate) {

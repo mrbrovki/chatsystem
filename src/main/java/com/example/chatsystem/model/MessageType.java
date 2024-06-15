@@ -1,7 +1,8 @@
 package com.example.chatsystem.model;
 
 public enum MessageType {
-    CHAT,
+    GROUP,
+    PRIVATE,
     JOIN,
     LEAVE
 }

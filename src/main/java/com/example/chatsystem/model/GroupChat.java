@@ -10,7 +10,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
 
-@Document(collection = "group_chats")
+@Document(collection = "groupChats")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -20,5 +20,5 @@ public class GroupChat {
     private ObjectId id;
     private List<ObjectId> memberIds;
     private String name;
-    private String hostId;
+    private ObjectId hostId;
 }

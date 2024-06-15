@@ -12,7 +12,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/users")
 public class UserController {
-    private UserService userService;
+    private final UserService userService;
 
     @Autowired
     public UserController(UserService userService) {
@@ -34,7 +34,7 @@ public class UserController {
         }
     }
 
-    @GetMapping("/username") // Correct placement
+    @GetMapping("/username")
     public ResponseEntity<User> getUserByUsername(@RequestParam("username") String username){
         User user = userService.findByUsername(username);
         if (user != null) {
@@ -46,14 +46,13 @@ public class UserController {
 
     @PutMapping("/{userId}/chats/{chatId}/add")
     public ResponseEntity<List<String>> addChatToUserById(@PathVariable("userId") ObjectId userId, @PathVariable("chatId") String chatId) {
-        List<String> updatedChatIds = userService.addChatToUser(userId, chatId);
+        List<String> updatedChatIds = userService.addPrivateChatToUser(userId, chatId);
         return ResponseEntity.ok(updatedChatIds);
     }
 
-
     @PutMapping("/{userId}/chats/{chatId}/remove")
     public ResponseEntity<List<String>> removeChatFromUserById(@PathVariable("userId") ObjectId userId, @PathVariable("chatId") String chatId) {
-        List<String> updatedChatIds = userService.removeChatFromUser(userId, chatId);
+        List<String> updatedChatIds = userService.removePrivateChatFromUser(userId, chatId);
         return ResponseEntity.ok(updatedChatIds);
     }
 
@@ -62,7 +61,6 @@ public class UserController {
         List<ObjectId> updatedChatIds = userService.addGroupChatToUser(userId, chatId);
         return ResponseEntity.ok(updatedChatIds);
     }
-
 
     @PutMapping("/{userId}/groups/{chatId}/remove")
     public ResponseEntity<List<ObjectId>> removeChatFromUserById(@PathVariable("userId") ObjectId userId, @PathVariable("chatId") ObjectId chatId) {
