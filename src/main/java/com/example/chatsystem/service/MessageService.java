@@ -1,6 +1,12 @@
 package com.example.chatsystem.service;
 
+import com.example.chatsystem.dto.MessageDTO;
+import com.example.chatsystem.dto.MessageReceiveDTO;
+import com.example.chatsystem.dto.MessageSendDTO;
+import com.example.chatsystem.model.GroupChat;
 import com.example.chatsystem.model.Message;
+import com.example.chatsystem.model.MessageType;
+import com.example.chatsystem.security.MyUserDetails;
 import org.bson.types.ObjectId;
 
 import java.util.List;
@@ -18,4 +24,11 @@ public interface MessageService{
     void deleteMessage(String collectionName, String id);
 
     void deleteAllMessages(String collectionName);
+
+    void persistMessage(MessageSendDTO messageSendDTO, MessageReceiveDTO messageReceiveDTO, MessageType messageType);
+
+    List<MessageDTO> getChatMessages(MyUserDetails userDetails, String targetUserName);
+
+    List<MessageDTO> getGroupChatMessages(MyUserDetails userDetails, GroupChat groupChat);
 }
+

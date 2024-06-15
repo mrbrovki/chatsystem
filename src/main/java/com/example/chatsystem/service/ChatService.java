@@ -1,27 +1,38 @@
 package com.example.chatsystem.service;
 
+import com.example.chatsystem.dto.ChatResponseDTO;
+import com.example.chatsystem.dto.GroupChatCreateDTO;
 import com.example.chatsystem.model.GroupChat;
 import org.bson.types.ObjectId;
 
-import java.util.List;
+import java.util.ArrayList;
 
 public interface ChatService {
-    public GroupChat findById(ObjectId id);
+    GroupChat findById(ObjectId id);
 
-    public List<GroupChat> findAllChats();
+    GroupChat updateGroupChat(GroupChat groupChat);
 
-    public GroupChat createChat(GroupChat groupChat);
+    GroupChat changeGroupChatHost(ObjectId userId, ObjectId chatId, String hostName);
 
-    public String createPrivateChatCollection(ObjectId senderId, ObjectId receiverId);
+    void deleteGroupChat(ObjectId userId, ObjectId chatId);
 
-    public GroupChat updateChat(GroupChat groupChat);
+    GroupChat addMemberToGroupChat(ObjectId userId, ObjectId chatId, String memberName);
 
-    public GroupChat changeChatHost(ObjectId id, String host);
-    public void deleteChat(ObjectId id);
+    GroupChat removeMemberFromGroupChat(ObjectId userId, ObjectId chatId, String memberName);
 
-    public GroupChat addMemberToChat(ObjectId chatId, ObjectId memberId);
+    void addUserToGroup(ObjectId userId, ObjectId chatId);
 
-    public GroupChat removeMemberFromChat(ObjectId chatId, ObjectId memberId);
+    void removeUserFromGroup(ObjectId userId, ObjectId chatId);
 
-    public GroupChat changeChatName(ObjectId chatId, String newName);
+    GroupChat changeGroupChatName(ObjectId userId, ObjectId chatId, String newName);
+
+    GroupChat createGroupChat(ObjectId userId, GroupChatCreateDTO groupChatCreateDTO);
+
+    ArrayList<ChatResponseDTO> findAllChats(ObjectId userId);
+
+    ArrayList<ChatResponseDTO> findPrivateChats(ObjectId userId);
+
+    ArrayList<ChatResponseDTO> findGroupChats(ObjectId userId);
+
+    ArrayList<String> findGroupChatMemberNames(ObjectId chatId);
 }

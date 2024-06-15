@@ -10,13 +10,13 @@ public interface UserService {
     User findByUsername(String username);
     User findById(ObjectId id);
 
-    List<String> addChatToUser(ObjectId userId, String chatId);
+    List<String> addPrivateChatToUser(ObjectId userId, String chatId);
 
-    List<String> addChatToUser(User user, String chatId);
+    List<String> addPrivateChatToUser(User user, String chatId);
 
-    List<String> removeChatFromUser(ObjectId userId, String chatId);
+    List<String> removePrivateChatFromUser(ObjectId userId, String chatId);
 
-    List<String> removeChatFromUser(User user, String chatId);
+    List<String> removePrivateChatFromUser(User user, String chatId);
 
     List<ObjectId> addGroupChatToUser(ObjectId userId, ObjectId chatId);
 
