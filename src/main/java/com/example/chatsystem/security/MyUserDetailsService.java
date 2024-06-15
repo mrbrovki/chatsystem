@@ -8,6 +8,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.Optional;
 
 @Component
@@ -21,14 +22,12 @@ public class MyUserDetailsService implements UserDetailsService {
         }
 
         @Override
-        public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        public MyUserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
             Optional<User> user = Optional.ofNullable(userRepository.findByUsername(username));
             if (user.isPresent()) {
                 User userDetails = user.get();
-                return org.springframework.security.core.userdetails.User.builder()
-                        .username(username)
-                        .password(userDetails.getHashedPassword())
-                        .build();
+                return new MyUserDetails(username, userDetails.getHashedPassword(),
+                        new HashSet<>(), userDetails.getUserId().toHexString());
             }else {
                 throw new UsernameNotFoundException(username);
             }

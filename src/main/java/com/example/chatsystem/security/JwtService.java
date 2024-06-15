@@ -34,6 +34,11 @@ public class JwtService {
         return claimsResolver.apply(claims);
     }
 
+    public String extractUserId(String token) {
+        Claims claims = extractAllClaims(token);
+        return claims.get("userId", String.class);
+    }
+
     private Claims extractAllClaims(String token) {
         return Jwts
                 .parserBuilder()
@@ -54,8 +59,9 @@ public class JwtService {
 
 
 
-    public String GenerateToken(String username){
+    public String GenerateToken(String username, String userId){
         Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", userId);
         return createToken(claims, username);
     }
 
