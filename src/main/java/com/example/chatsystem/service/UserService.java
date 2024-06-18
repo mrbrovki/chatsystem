@@ -6,6 +6,8 @@ import org.bson.types.ObjectId;
 import java.util.List;
 
 public interface UserService {
+    User create(User user);
+
     List<User> findAll();
     User findByUsername(String username);
     User findById(ObjectId id);

@@ -10,8 +10,6 @@ public interface WebSocketService {
 
     void sendGroupMessage(String groupId, MessageReceiveDTO message);
 
-    MessageReceiveDTO buildMessageReceiveDTO(MessageSendDTO messageSendDTO, String senderName);
-
     void handleMessage(MessageSendDTO messageSendDTO, String senderName);
 
     void subscribeUserToGroup(String username, ObjectId groupId);

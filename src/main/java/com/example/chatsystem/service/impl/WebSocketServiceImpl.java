@@ -10,8 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-
 @Service
 public class WebSocketServiceImpl implements WebSocketService {
 
@@ -34,23 +32,10 @@ public class WebSocketServiceImpl implements WebSocketService {
         messagingTemplate.convertAndSend("/group/" + groupId + "/queue/messages", message);
     }
 
-    @Override
-    public MessageReceiveDTO buildMessageReceiveDTO(MessageSendDTO messageSendDTO, String senderName) {
-        LocalDateTime now = LocalDateTime.now();
-
-        return MessageReceiveDTO.builder()
-                .timestamp(now)
-                .senderName(senderName)
-                .message(messageSendDTO.getMessage())
-                .type(messageSendDTO.getType())
-                .build();
-    }
 
     @Override
     public void handleMessage(MessageSendDTO messageSendDTO, String senderName) {
-        MessageReceiveDTO messageReceiveDTO = buildMessageReceiveDTO(messageSendDTO, senderName);
-        System.out.println(messageReceiveDTO);
-        System.out.println(messageSendDTO);
+        MessageReceiveDTO messageReceiveDTO = messageService.buildMessageReceiveDTO(messageSendDTO, senderName);
         //  persist
         messageService.persistMessage(messageSendDTO, messageReceiveDTO, messageSendDTO.getType());
 
@@ -59,6 +44,7 @@ public class WebSocketServiceImpl implements WebSocketService {
             case GROUP -> sendGroupMessage(messageSendDTO.getReceiverName(), messageReceiveDTO);
         }
     }
+
 
     @Override
     public void subscribeUserToGroup(String username, ObjectId groupId) {

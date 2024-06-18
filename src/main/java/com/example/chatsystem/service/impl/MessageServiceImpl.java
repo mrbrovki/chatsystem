@@ -15,6 +15,7 @@ import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -127,5 +128,17 @@ public class MessageServiceImpl implements MessageService {
             messageDTOS.add(messageDTO);
         }
         return messageDTOS;
+    }
+
+    @Override
+    public MessageReceiveDTO buildMessageReceiveDTO(MessageSendDTO messageSendDTO, String senderName) {
+        LocalDateTime now = LocalDateTime.now();
+
+        return MessageReceiveDTO.builder()
+                .timestamp(now)
+                .senderName(senderName)
+                .message(messageSendDTO.getMessage())
+                .type(messageSendDTO.getType())
+                .build();
     }
 }

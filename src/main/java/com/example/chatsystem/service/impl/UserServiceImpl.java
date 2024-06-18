@@ -5,6 +5,7 @@ import com.example.chatsystem.repository.UserRepository;
 import com.example.chatsystem.service.UserService;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,8 +15,13 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, MongoTemplate mongoTemplate) {
         this.userRepository = userRepository;
+    }
+
+    @Override
+    public User create(User user){
+        return userRepository.save(user);
     }
 
     @Override

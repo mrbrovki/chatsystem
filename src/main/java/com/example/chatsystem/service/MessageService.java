@@ -30,5 +30,7 @@ public interface MessageService{
     List<MessageDTO> getChatMessages(MyUserDetails userDetails, String targetUserName);
 
     List<MessageDTO> getGroupChatMessages(MyUserDetails userDetails, GroupChat groupChat);
+
+    MessageReceiveDTO buildMessageReceiveDTO(MessageSendDTO messageSendDTO, String senderName);
 }
 
