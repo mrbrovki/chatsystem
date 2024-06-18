@@ -13,5 +13,6 @@ import lombok.NoArgsConstructor;
 public class ChatResponseDTO {
     String name;
     String id;
+    String avatar;
     MessageType type;
 }

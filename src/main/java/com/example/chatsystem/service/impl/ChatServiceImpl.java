@@ -154,6 +154,7 @@ public class ChatServiceImpl implements ChatService {
         User user = userService.findById(userId);
         setUserPrivateChats(chatDTOs, user);
         setUserGroupChats(chatDTOs, user);
+        System.out.println(chatDTOs);
         return chatDTOs;
     }
 
@@ -199,9 +200,10 @@ public class ChatServiceImpl implements ChatService {
             String userId2 = userIds[1];
 
             ObjectId receiverId = userId1.equals(user.getUserId().toHexString())? new ObjectId(userId2): new ObjectId(userId1);
-
+            User receiver = userService.findById(receiverId);
             chatDTOs.add(ChatResponseDTO.builder()
-                    .name(userService.findById(receiverId).getEmail())
+                    .name(receiver.getEmail())
+                            .avatar(receiver.getAvatar())
                     .type(MessageType.PRIVATE)
                     .build());
         }

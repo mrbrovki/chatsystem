@@ -19,6 +19,7 @@ public class User {
 
     @Id
     private ObjectId userId;
+    private String avatar;
     private String email;
     private String hashedPassword;
     private List<ObjectId> groupChats;
