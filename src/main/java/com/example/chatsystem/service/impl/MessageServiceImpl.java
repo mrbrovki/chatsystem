@@ -3,6 +3,7 @@ package com.example.chatsystem.service.impl;
 import com.example.chatsystem.dto.MessageDTO;
 import com.example.chatsystem.dto.MessageReceiveDTO;
 import com.example.chatsystem.dto.MessageSendDTO;
+import com.example.chatsystem.exception.DocumentNotFoundException;
 import com.example.chatsystem.model.GroupChat;
 import com.example.chatsystem.model.Message;
 import com.example.chatsystem.model.MessageType;
@@ -33,34 +34,35 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public List<Message> findAllMessages(String collectionName) {
-        return messageRepository.findAllMessages(collectionName);
+        return messageRepository.findAll(collectionName);
     }
 
     @Override
-    public Message findMessageById(String collectionName, String id) {
-        return messageRepository.findMessageById(collectionName, id);
+    public Message findMessageById(String collectionName, ObjectId id) {
+        return messageRepository.findById(collectionName, id).orElseThrow(()->
+                new DocumentNotFoundException("Message " + id + " not found in collection " + collectionName));
     }
 
     @Override
     public Message saveMessage(String collectionName, Message message) {
-        return messageRepository.saveMessage(collectionName, message);
+        return messageRepository.save(collectionName, message);
     }
 
     @Override
     public Message updateMessage(String collectionName, Message message) {
-        return messageRepository.updateMessage(collectionName, message);
+        return messageRepository.update(collectionName, message);
     }
 
     @Override
-    public void deleteMessage(String collectionName, String id) {
-        messageRepository.deleteMessage(collectionName, id);
+    public void deleteMessage(String collectionName, ObjectId id) {
+        Message message = findMessageById(collectionName, id);
+        messageRepository.delete(collectionName, message);
     }
 
     @Override
     public void deleteAllMessages(String collectionName) {
-        messageRepository.deleteAllMessages(collectionName);
+        messageRepository.deleteAll(collectionName);
     }
-
 
     @Override
     public void persistMessage(MessageSendDTO messageSendDTO, MessageReceiveDTO messageReceiveDTO, MessageType messageType){
@@ -92,7 +94,7 @@ public class MessageServiceImpl implements MessageService {
     public List<MessageDTO> getChatMessages(MyUserDetails userDetails, String targetUserName){
         ObjectId targetUserId = userService.findByUsername(targetUserName).getUserId();
         String chatCollection = ChatServiceImpl.getPrivateChatCollectionName(new ObjectId(userDetails.getUserId()), targetUserId);
-        List<Message> messages = messageRepository.findAllMessages(chatCollection);
+        List<Message> messages = messageRepository.findAll(chatCollection);
         List<MessageDTO> messageDTOS = new ArrayList<>();
         for (Message message : messages) {
             MessageDTO messageDTO = MessageDTO.builder()
@@ -117,12 +119,12 @@ public class MessageServiceImpl implements MessageService {
             return messageDTOS;
         }
 
-        List<Message> messages = messageRepository.findAllMessages("group_"+groupChat.getId().toHexString());
+        List<Message> messages = messageRepository.findAll("group_"+groupChat.getId().toHexString());
 
         for (Message message : messages) {
             MessageDTO messageDTO = MessageDTO.builder()
                     .message(message.getMessage())
-                    .senderName(userService.findById(message.getSenderId()).getEmail())
+                    .senderName(userService.findById(message.getSenderId()).getUsername())
                     .timestamp(message.getTimestamp())
                     .build();
             messageDTOS.add(messageDTO);
