@@ -1,5 +1,6 @@
-package com.example.chatsystem.bot;
+package com.example.chatsystem.dto;
 
+import com.example.chatsystem.bot.Choice;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,9 +12,6 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class ChatRequestDTO {
-    private String model;
-    private List<Message> messages;
-    private int n;
-    private double temperature;
+public class BotResponseDTO {
+    private List<Choice> choices;
 }

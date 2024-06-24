@@ -1,8 +1,6 @@
 package com.example.chatsystem.bot;
 
-import com.example.chatsystem.dto.MessageDTO;
-import com.example.chatsystem.dto.MessageReceiveDTO;
-import com.example.chatsystem.dto.MessageSendDTO;
+import com.example.chatsystem.dto.*;
 import com.example.chatsystem.model.MessageType;
 import com.example.chatsystem.security.MyUserDetails;
 import com.example.chatsystem.security.MyUserDetailsService;
@@ -35,17 +33,17 @@ public class ChatGPT {
         this.webSocketService = webSocketService;
     }
 
-    public ChatResponseDTO prompt(ChatRequestDTO chatRequestDTO) {
+    public BotResponseDTO prompt(BotRequestDTO botRequestDTO) {
         WebClient client = WebClient.create("https://api.pawan.krd");
-        Mono<ChatResponseDTO> responseDTOMono = client.post()
+        Mono<BotResponseDTO> responseDTOMono = client.post()
                 .uri("/v1/chat/completions")
                 .headers(httpHeaders -> {
                     httpHeaders.setContentType(MediaType.APPLICATION_JSON);
                     httpHeaders.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
                     httpHeaders.setBearerAuth(openaiApiKey);
-                }).bodyValue(chatRequestDTO)
+                }).bodyValue(botRequestDTO)
                 .retrieve()
-                .bodyToMono(ChatResponseDTO.class);
+                .bodyToMono(BotResponseDTO.class);
         return responseDTOMono.block();
     }
 
@@ -74,13 +72,13 @@ public class ChatGPT {
             messages.add(message);
         });
 
-        ChatRequestDTO chatRequestDTO = ChatRequestDTO.builder()
+        BotRequestDTO chatRequestDTO = BotRequestDTO.builder()
                 .model("gpt-3.5-unfiltered")
                 .temperature(1)
                 .messages(messages)
                 .build();
-        ChatResponseDTO chatResponseDTO = prompt(chatRequestDTO);
-        Choice choice = chatResponseDTO.getChoices().getFirst();
+        BotResponseDTO botResponseDTO = prompt(chatRequestDTO);
+        Choice choice = botResponseDTO.getChoices().getFirst();
         String messageContent = choice.getMessage().getContent();
         MessageSendDTO botSendDTO = MessageSendDTO.builder()
                 .message(messageContent)
