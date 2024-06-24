@@ -2,6 +2,7 @@ package com.example.chatsystem.service.impl;
 
 import com.example.chatsystem.dto.ChatResponseDTO;
 import com.example.chatsystem.dto.GroupChatCreateDTO;
+import com.example.chatsystem.exception.DocumentNotFoundException;
 import com.example.chatsystem.model.GroupChat;
 import com.example.chatsystem.model.MessageType;
 import com.example.chatsystem.model.User;
@@ -31,15 +32,13 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public GroupChat findById(ObjectId id) {
-        return chatRepository.findById(id);
+        return chatRepository.findById(id).orElseThrow(()->new DocumentNotFoundException("Chat " + id.toHexString() + " not found"));
     }
 
     @Override
     public GroupChat updateGroupChat(GroupChat groupChat) {
         return chatRepository.update(groupChat);
     }
-
-
 
     @Override
     public GroupChat changeGroupChatHost(ObjectId userId, ObjectId chatId, String hostName) {
@@ -57,9 +56,9 @@ public class ChatServiceImpl implements ChatService {
         if (isHost(groupChat, userId)) {
             List<ObjectId> memberIds = groupChat.getMemberIds();
             for (ObjectId memberId : memberIds) {
-                webSocketService.unsubscribeUserToGroup(userService.findById(memberId).getEmail(), chatId);
+                webSocketService.unsubscribeUserToGroup(userService.findById(memberId).getUsername(), chatId);
             }
-            chatRepository.deleteById(chatId);
+            chatRepository.delete(groupChat);
         }
     }
 
@@ -102,13 +101,13 @@ public class ChatServiceImpl implements ChatService {
     private void addUserToGroup(User user, GroupChat groupChat) {
         groupChat.getMemberIds().add(user.getUserId());
         userService.addGroupChatToUser(user, groupChat.getId());
-        webSocketService.subscribeUserToGroup(user.getEmail(), groupChat.getId());
+        webSocketService.subscribeUserToGroup(user.getUsername(), groupChat.getId());
     }
 
     private void removeUserFromGroup(User user, GroupChat groupChat){
         groupChat.getMemberIds().remove(user.getUserId());
         userService.removeGroupChatFromUser(user, groupChat.getId());
-        webSocketService.unsubscribeUserToGroup(user.getEmail(), groupChat.getId());
+        webSocketService.unsubscribeUserToGroup(user.getUsername(), groupChat.getId());
     }
 
     @Override
@@ -142,7 +141,7 @@ public class ChatServiceImpl implements ChatService {
         for (ObjectId memberId : memberIds) {
             User user = userService.findById(memberId);
             userService.addGroupChatToUser(user, createdGroupchat.getId());
-            webSocketService.subscribeUserToGroup(user.getEmail(), createdGroupchat.getId());
+            webSocketService.subscribeUserToGroup(user.getUsername(), createdGroupchat.getId());
         }
 
         return groupChat;
@@ -180,7 +179,7 @@ public class ChatServiceImpl implements ChatService {
         GroupChat groupChat = findById(chatId);
         groupChat.getMemberIds().forEach(memberId -> {
             User user = userService.findById(memberId);
-            memberNames.add(user.getEmail());
+            memberNames.add(user.getUsername());
         });
         return memberNames;
     }
@@ -202,7 +201,7 @@ public class ChatServiceImpl implements ChatService {
             ObjectId receiverId = userId1.equals(user.getUserId().toHexString())? new ObjectId(userId2): new ObjectId(userId1);
             User receiver = userService.findById(receiverId);
             chatDTOs.add(ChatResponseDTO.builder()
-                    .name(receiver.getEmail())
+                    .name(receiver.getUsername())
                             .avatar(receiver.getAvatar())
                     .type(MessageType.PRIVATE)
                     .build());

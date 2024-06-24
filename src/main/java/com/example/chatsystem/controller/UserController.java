@@ -5,12 +5,14 @@ import com.example.chatsystem.service.UserService;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/users")
+@RequestMapping("/api/v2/users")
 public class UserController {
     private final UserService userService;
 
@@ -20,8 +22,8 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<List<User>> getAllUsers(){
-        return ResponseEntity.ok(userService.findAll());
+    public ResponseEntity<String> getUserName(@AuthenticationPrincipal UserDetails user){
+        return ResponseEntity.ok(user.getUsername());
     }
 
     @GetMapping("/{id}")

@@ -1,5 +1,6 @@
 package com.example.chatsystem.service.impl;
 
+import com.example.chatsystem.exception.DocumentNotFoundException;
 import com.example.chatsystem.model.User;
 import com.example.chatsystem.repository.UserRepository;
 import com.example.chatsystem.service.UserService;
@@ -15,7 +16,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository, MongoTemplate mongoTemplate) {
+    public UserServiceImpl(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
@@ -31,12 +32,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User findById(ObjectId id) {
-        return userRepository.findById(id);
+        return userRepository.findById(id).orElseThrow(()->new DocumentNotFoundException("User " + id.toHexString() + " not found!"));
     }
 
     @Override
     public User findByUsername(String username) {
-        return userRepository.findByUsername(username);
+        return userRepository.findByUsername(username).orElseThrow(()->new DocumentNotFoundException("User " + username + " not found!"));
     }
 
     @Override

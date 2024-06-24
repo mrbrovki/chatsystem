@@ -16,10 +16,10 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class User {
-
     @Id
     private ObjectId userId;
     private String avatar;
+    private String username;
     private String email;
     private String hashedPassword;
     private List<ObjectId> groupChats;

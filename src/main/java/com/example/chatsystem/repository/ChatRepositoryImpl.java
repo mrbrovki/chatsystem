@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class ChatRepositoryImpl implements ChatRepository {
@@ -20,9 +21,9 @@ public class ChatRepositoryImpl implements ChatRepository {
     }
 
     @Override
-    public GroupChat findById(ObjectId id) {
+    public Optional<GroupChat> findById(ObjectId id) {
         Query query = new Query(Criteria.where("_id").is(id));
-        return mongoTemplate.findOne(query, GroupChat.class);
+        return Optional.ofNullable(mongoTemplate.findOne(query, GroupChat.class));
     }
 
     @Override
@@ -31,8 +32,8 @@ public class ChatRepositoryImpl implements ChatRepository {
     }
 
     @Override
-    public void deleteById(ObjectId id) {
-        mongoTemplate.remove(findById(id));
+    public void delete(GroupChat groupChat) {
+        mongoTemplate.remove(groupChat);
     }
 
     @Override
@@ -41,7 +42,7 @@ public class ChatRepositoryImpl implements ChatRepository {
     }
 
     @Override
-    public List<GroupChat> findAllChats() {
+    public List<GroupChat> findAll() {
         return mongoTemplate.findAll(GroupChat.class);
     }
 }

@@ -4,15 +4,18 @@ import com.example.chatsystem.model.User;
 import org.bson.types.ObjectId;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface UserRepository {
-    public User findByUsername(String username);
-    public List<User> findAll();
-    public User findById(ObjectId id);
+    Optional<User> findByUsername(String username);
 
-    public User save(User user);
-    public User update(User user);
-    public void deleteById(ObjectId id);
+    List<User> findAll();
 
-    public void deleteByUsername(String username);
+    Optional<User> findById(ObjectId id);
+
+    User save(User user);
+
+    User update(User user);
+
+    void delete(User user);
 }

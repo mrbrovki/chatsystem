@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class UserRepositoryImpl implements UserRepository {
@@ -20,10 +21,10 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public User findByUsername(String username) {
+    public Optional<User> findByUsername(String username) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("email").is(username));
-        return mongoTemplate.findOne(query, User.class);
+        query.addCriteria(Criteria.where("username").is(username));
+        return Optional.ofNullable(mongoTemplate.findOne(query, User.class));
     }
 
     @Override
@@ -32,8 +33,8 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public User findById(ObjectId id) {
-        return mongoTemplate.findById(id, User.class);
+    public Optional<User> findById(ObjectId id) {
+        return Optional.ofNullable(mongoTemplate.findById(id, User.class));
     }
 
     @Override
@@ -47,12 +48,8 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public void deleteById(ObjectId id) {
-        mongoTemplate.remove(findById(id));
+    public void delete(User user) {
+        mongoTemplate.remove(user);
     }
 
-    @Override
-    public void deleteByUsername(String username) {
-        mongoTemplate.remove(findByUsername(username));
-    }
 }

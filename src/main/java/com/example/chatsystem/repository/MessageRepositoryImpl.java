@@ -1,12 +1,14 @@
 package com.example.chatsystem.repository;
 
 import com.example.chatsystem.model.Message;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class MessageRepositoryImpl implements MessageRepository{
@@ -18,32 +20,32 @@ public class MessageRepositoryImpl implements MessageRepository{
     }
 
     @Override
-    public List<Message> findAllMessages(String collectionName) {
+    public List<Message> findAll(String collectionName) {
         return mongoTemplate.findAll(Message.class, collectionName);
     }
 
     @Override
-    public Message findMessageById(String collectionName, String id) {
-        return mongoTemplate.findById(id, Message.class, collectionName);
+    public Optional<Message> findById(String collectionName, ObjectId id) {
+        return Optional.ofNullable(mongoTemplate.findById(id, Message.class, collectionName));
     }
 
     @Override
-    public Message saveMessage(String collectionName, Message message) {
+    public Message save(String collectionName, Message message) {
         return mongoTemplate.save(message, collectionName);
     }
 
     @Override
-    public void deleteMessage(String collectionName, String id) {
-        mongoTemplate.remove(findMessageById(collectionName, id), collectionName);
+    public void delete(String collectionName, Message message) {
+        mongoTemplate.remove(message, collectionName);
     }
 
     @Override
-    public Message updateMessage(String collectionName, Message message) {
+    public Message update(String collectionName, Message message) {
         return mongoTemplate.save(message, collectionName);
     }
 
     @Override
-    public void deleteAllMessages(String collectionName) {
+    public void deleteAll(String collectionName) {
         mongoTemplate.remove(new Query(), collectionName);
     }
 }

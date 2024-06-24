@@ -15,13 +15,13 @@ public interface MessageService{
 
     List<Message> findAllMessages(String collectionName);
 
-    Message findMessageById(String collectionName, String id);
+    Message findMessageById(String collectionName, ObjectId id);
 
     Message saveMessage(String collectionName, Message message);
 
     Message updateMessage(String collectionName, Message message);
 
-    void deleteMessage(String collectionName, String id);
+    void deleteMessage(String collectionName, ObjectId id);
 
     void deleteAllMessages(String collectionName);
 

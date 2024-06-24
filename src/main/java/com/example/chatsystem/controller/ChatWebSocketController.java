@@ -1,20 +1,13 @@
 package com.example.chatsystem.controller;
 
 import com.example.chatsystem.bot.ChatGPT;
-import com.example.chatsystem.bot.ChatRequestDTO;
-import com.example.chatsystem.bot.ChatResponseDTO;
-import com.example.chatsystem.bot.Message;
 import com.example.chatsystem.dto.MessageSendDTO;
 import com.example.chatsystem.service.WebSocketService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.stereotype.Controller;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Controller
 public class ChatWebSocketController {

@@ -4,15 +4,16 @@ import com.example.chatsystem.model.GroupChat;
 import org.bson.types.ObjectId;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ChatRepository{
-    public List<GroupChat> findAllChats();
+    List<GroupChat> findAll();
 
-    public GroupChat findById(ObjectId id);
+    Optional<GroupChat> findById(ObjectId id);
 
-    public GroupChat save(GroupChat groupChat);
+    GroupChat save(GroupChat groupChat);
 
-    public void deleteById(ObjectId id);
+    void delete(GroupChat groupChat);
 
-    public GroupChat update(GroupChat groupChat);
+    GroupChat update(GroupChat groupChat);
 }
