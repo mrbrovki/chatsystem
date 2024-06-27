@@ -191,15 +191,10 @@ public class ChatServiceImpl implements ChatService {
     }
 
     private void setUserPrivateChats(ArrayList<ChatResponseDTO> chatDTOs, User user) {
-        List<String> chatIdsStr = user.getChats();
+        List<ObjectId> chatUserIds = user.getChats();
 
-        for (String chatId : chatIdsStr) {
-            String[] userIds = chatId.substring(5).split("&");
-            String userId1 = userIds[0];
-            String userId2 = userIds[1];
-
-            ObjectId receiverId = userId1.equals(user.getUserId().toHexString())? new ObjectId(userId2): new ObjectId(userId1);
-            User receiver = userService.findById(receiverId);
+        for (ObjectId chatUserId : chatUserIds) {
+            User receiver = userService.findById(chatUserId);
             chatDTOs.add(ChatResponseDTO.builder()
                     .name(receiver.getUsername())
                             .avatar(receiver.getAvatar())

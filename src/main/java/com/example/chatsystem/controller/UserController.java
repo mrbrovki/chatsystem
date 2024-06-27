@@ -45,28 +45,4 @@ public class UserController {
             return ResponseEntity.notFound().build();
         }
     }
-
-    @PutMapping("/{userId}/chats/{chatId}/add")
-    public ResponseEntity<List<String>> addChatToUserById(@PathVariable("userId") ObjectId userId, @PathVariable("chatId") String chatId) {
-        List<String> updatedChatIds = userService.addPrivateChatToUser(userId, chatId);
-        return ResponseEntity.ok(updatedChatIds);
-    }
-
-    @PutMapping("/{userId}/chats/{chatId}/remove")
-    public ResponseEntity<List<String>> removeChatFromUserById(@PathVariable("userId") ObjectId userId, @PathVariable("chatId") String chatId) {
-        List<String> updatedChatIds = userService.removePrivateChatFromUser(userId, chatId);
-        return ResponseEntity.ok(updatedChatIds);
-    }
-
-    @PutMapping("/{userId}/groups/{chatId}/add")
-    public ResponseEntity<List<ObjectId>> addChatToUserById(@PathVariable("userId") ObjectId userId, @PathVariable("chatId") ObjectId chatId) {
-        List<ObjectId> updatedChatIds = userService.addGroupChatToUser(userId, chatId);
-        return ResponseEntity.ok(updatedChatIds);
-    }
-
-    @PutMapping("/{userId}/groups/{chatId}/remove")
-    public ResponseEntity<List<ObjectId>> removeChatFromUserById(@PathVariable("userId") ObjectId userId, @PathVariable("chatId") ObjectId chatId) {
-        List<ObjectId> updatedChatIds = userService.removeGroupChatFromUser(userId, chatId);
-        return ResponseEntity.ok(updatedChatIds);
-    }
 }

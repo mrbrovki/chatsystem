@@ -1,5 +1,6 @@
 package com.example.chatsystem.service;
 
+import com.example.chatsystem.dto.AddPrivateChatDTO;
 import com.example.chatsystem.model.User;
 import org.bson.types.ObjectId;
 
@@ -12,13 +13,12 @@ public interface UserService {
     User findByUsername(String username);
     User findById(ObjectId id);
 
-    List<String> addPrivateChatToUser(ObjectId userId, String chatId);
 
-    List<String> addPrivateChatToUser(User user, String chatId);
+    List<String> addPrivateChatToUser(ObjectId userId, AddPrivateChatDTO privateChatDTO);
 
-    List<String> removePrivateChatFromUser(ObjectId userId, String chatId);
+    List<String> addPrivateChatToUser(ObjectId userId, ObjectId chatUserId);
 
-    List<String> removePrivateChatFromUser(User user, String chatId);
+    List<String> removePrivateChatFromUser(ObjectId userId, AddPrivateChatDTO privateChatDTO);
 
     List<ObjectId> addGroupChatToUser(ObjectId userId, ObjectId chatId);
 

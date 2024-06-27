@@ -77,6 +77,17 @@ public class MessageServiceImpl implements MessageService {
                 User receiver = userService.findByUsername(messageSendDTO.getReceiverName());
                 message.setReceiverId(receiver.getUserId());
                 collectionName = ChatServiceImpl.getPrivateChatCollectionName(sender.getUserId(), receiver.getUserId());
+
+                if(!collectionExists(collectionName)){
+                    if(!sender.getChats().contains(receiver.getUserId())){
+                        userService.addPrivateChatToUser(sender.getUserId(), receiver.getUserId());
+                    }
+                    if(!receiver.getChats().contains(sender.getUserId())){
+                        receiver.getChats().add(sender.getUserId());
+                        userService.addPrivateChatToUser(receiver.getUserId(), sender.getUserId());
+                    }
+                }
+
             }
             case GROUP -> collectionName = "group_" + messageSendDTO.getReceiverName();
             default -> collectionName = "";
@@ -88,6 +99,11 @@ public class MessageServiceImpl implements MessageService {
         message.setType(messageReceiveDTO.getType());
         message.setTimestamp(messageReceiveDTO.getTimestamp());
         saveMessage(collectionName, message);
+    }
+
+    @Override
+    public boolean collectionExists(String collectionName) {
+        return messageRepository.collectionExists(collectionName);
     }
 
     @Override

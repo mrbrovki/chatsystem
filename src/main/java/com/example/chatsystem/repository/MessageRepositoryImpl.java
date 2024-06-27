@@ -31,7 +31,12 @@ public class MessageRepositoryImpl implements MessageRepository{
 
     @Override
     public Message save(String collectionName, Message message) {
-        return mongoTemplate.save(message, collectionName);
+        return mongoTemplate.insert(message, collectionName);
+    }
+
+    @Override
+    public boolean collectionExists(String collectionName) {
+        return mongoTemplate.collectionExists(collectionName);
     }
 
     @Override

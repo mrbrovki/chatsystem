@@ -1,12 +1,12 @@
 package com.example.chatsystem.service.impl;
 
+import com.example.chatsystem.dto.AddPrivateChatDTO;
 import com.example.chatsystem.exception.DocumentNotFoundException;
 import com.example.chatsystem.model.User;
 import com.example.chatsystem.repository.UserRepository;
 import com.example.chatsystem.service.UserService;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -41,30 +41,35 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<String> addPrivateChatToUser(ObjectId userId, String chatId) {
-        return addPrivateChatToUser(findById(userId), chatId);
-    }
-
-    @Override
-    public List<String> addPrivateChatToUser(User user, String chatId) {
-        List<String> chats = user.getChats();
-        chats.add(chatId);
+    public List<String> addPrivateChatToUser(ObjectId userId, AddPrivateChatDTO privateChatDTO) {
+        User user = findById(userId);
+        List<ObjectId> chats = user.getChats();
+        User targetUser = findByUsername(privateChatDTO.getUsername());
+        chats.add(targetUser.getUserId());
         userRepository.update(user);
-        return chats;
+        return chats.stream().map((chatUserId)->findById(chatUserId).getUsername()).toList();
     }
 
     @Override
-    public List<String> removePrivateChatFromUser(ObjectId userId, String chatId) {
-        return removePrivateChatFromUser(findById(userId), chatId);
-    }
-
-    @Override
-    public List<String> removePrivateChatFromUser(User user, String chatId) {
-        List<String> chats = user.getChats();
-        chats.remove(chatId);
+    public List<String> addPrivateChatToUser(ObjectId userId,  ObjectId chatUserId) {
+        User user = findById(userId);
+        List<ObjectId> chats = user.getChats();
+        User targetUser = findById(chatUserId);
+        chats.add(targetUser.getUserId());
         userRepository.update(user);
-        return chats;
+        return chats.stream().map((id)->findById(id).getUsername()).toList();
     }
+
+    @Override
+    public List<String> removePrivateChatFromUser(ObjectId userId, AddPrivateChatDTO privateChatDTO) {
+        User user = findById(userId);
+        List<ObjectId> chats = user.getChats();
+        User targetUser = findByUsername(privateChatDTO.getUsername());
+        chats.remove(targetUser.getUserId());
+        userRepository.update(user);
+        return chats.stream().map((chatUserId)->findById(chatUserId).getUsername()).toList();
+    }
+
 
     @Override
     public List<ObjectId> addGroupChatToUser(ObjectId userId, ObjectId chatId) {

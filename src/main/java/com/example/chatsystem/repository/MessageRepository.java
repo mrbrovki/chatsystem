@@ -13,6 +13,8 @@ public interface MessageRepository {
 
     Message save(String collectionName, Message message);
 
+    boolean collectionExists(String collectionName);
+
     void delete(String collectionName, Message message);
 
     Message update(String collectionName, Message message);

@@ -23,5 +23,5 @@ public class User {
     private String email;
     private String hashedPassword;
     private List<ObjectId> groupChats;
-    private List<String> chats;
+    private List<ObjectId> chats;
 }

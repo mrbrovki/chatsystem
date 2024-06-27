@@ -27,6 +27,8 @@ public interface MessageService{
 
     void persistMessage(MessageSendDTO messageSendDTO, MessageReceiveDTO messageReceiveDTO, MessageType messageType);
 
+    boolean collectionExists(String collectionName);
+
     List<MessageDTO> getChatMessages(MyUserDetails userDetails, String targetUserName);
 
     List<MessageDTO> getGroupChatMessages(MyUserDetails userDetails, GroupChat groupChat);
