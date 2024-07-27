@@ -45,4 +45,15 @@ public class UserController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    //  for testing only
+    @GetMapping("/all")
+    public ResponseEntity<List<User>> findAll(){
+        List<User> user = userService.findAll();
+        if (user != null) {
+            return ResponseEntity.ok(user);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }
