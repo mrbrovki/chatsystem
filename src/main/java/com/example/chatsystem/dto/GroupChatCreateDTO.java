@@ -14,4 +14,5 @@ import java.util.List;
 public class GroupChatCreateDTO {
     private List<String> memberNames;
     private String name;
+    private String avatar;
 }

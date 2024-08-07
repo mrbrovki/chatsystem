@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class ChatServiceImpl implements ChatService {
@@ -33,6 +34,25 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public GroupChat findById(ObjectId id) {
         return chatRepository.findById(id).orElseThrow(()->new DocumentNotFoundException("Chat " + id.toHexString() + " not found"));
+    }
+
+    @Override
+    public ChatResponseDTO findById(ObjectId userId, ObjectId groupId) {
+        GroupChat groupChat = findById(groupId);
+        User user = userService.findById(groupChat.getHostId());
+
+        if(groupChat.getMemberIds().contains(userId)){
+            return ChatResponseDTO.builder()
+                    .id(groupId.toHexString())
+                    .members(groupChat.getMemberIds().stream().map(ObjectId::toHexString).collect(Collectors.toList()))
+                    .avatar(groupChat.getAvatar())
+                    .name(groupChat.getName())
+                    .type(MessageType.GROUP)
+                    .host(user.getUsername())
+                    .build();
+        }
+
+        return null;
     }
 
     @Override
@@ -120,11 +140,14 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public GroupChat createGroupChat(ObjectId userId, GroupChatCreateDTO groupChatCreateDTO) {
+    public ChatResponseDTO createGroupChat(ObjectId userId, GroupChatCreateDTO groupChatCreateDTO) {
         GroupChat groupChat = GroupChat.builder()
                 .name(groupChatCreateDTO.getName())
+                .avatar(groupChatCreateDTO.getAvatar())
                 .hostId(userId)
                 .build();
+
+        User hostUser = userService.findById(userId);
 
         List<ObjectId> memberIds = new ArrayList<>();
 
@@ -144,7 +167,14 @@ public class ChatServiceImpl implements ChatService {
             webSocketService.subscribeUserToGroup(user.getUsername(), createdGroupchat.getId());
         }
 
-        return groupChat;
+        return ChatResponseDTO.builder()
+                .id(createdGroupchat.getId().toHexString())
+                .members(createdGroupchat.getMemberIds().stream().map(ObjectId::toHexString).collect(Collectors.toList()))
+                .avatar(createdGroupchat.getAvatar())
+                .name(createdGroupchat.getName())
+                .type(MessageType.GROUP)
+                .host(hostUser.getUsername())
+                .build();
     }
 
     @Override
@@ -196,10 +226,10 @@ public class ChatServiceImpl implements ChatService {
         for (ObjectId chatUserId : chatUserIds) {
             User receiver = userService.findById(chatUserId);
             chatDTOs.add(ChatResponseDTO.builder()
-                    .name(receiver.getUsername())
+                            .name(receiver.getUsername())
                             .avatar(receiver.getAvatar())
-                    .type(MessageType.PRIVATE)
-                    .build());
+                            .type(MessageType.PRIVATE)
+                            .build());
         }
     }
 
@@ -207,10 +237,14 @@ public class ChatServiceImpl implements ChatService {
         List<ObjectId> groupChatIds = user.getGroupChats();
         for (ObjectId chatId : groupChatIds) {
             GroupChat groupChat = findById(chatId);
+            User hostUser = userService.findById(groupChat.getHostId());
             chatDTOs.add(ChatResponseDTO.builder()
+                    .id(chatId.toHexString())
+                    .members(groupChat.getMemberIds().stream().map(ObjectId::toHexString).collect(Collectors.toList()))
+                    .avatar(groupChat.getAvatar())
                     .name(groupChat.getName())
-                    .id(groupChat.getId().toHexString())
                     .type(MessageType.GROUP)
+                    .host(hostUser.getUsername())
                     .build());
         }
     }

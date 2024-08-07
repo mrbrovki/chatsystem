@@ -35,9 +35,10 @@ public class ChatController {
         return ResponseEntity.ok(chatsDTOs);
     }
 
+
     @PostMapping("/groups")
-    public ResponseEntity<GroupChat> createGroupChat(@AuthenticationPrincipal MyUserDetails userDetails, @RequestBody GroupChatCreateDTO groupChatCreateDTO) {
-        GroupChat createdGroupChat = chatService.createGroupChat(new ObjectId(userDetails.getUserId()), groupChatCreateDTO);
+    public ResponseEntity<ChatResponseDTO> createGroupChat(@AuthenticationPrincipal MyUserDetails userDetails, @RequestBody GroupChatCreateDTO groupChatCreateDTO) {
+        ChatResponseDTO createdGroupChat = chatService.createGroupChat(new ObjectId(userDetails.getUserId()), groupChatCreateDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdGroupChat);
     }
 
@@ -51,6 +52,12 @@ public class ChatController {
     public ResponseEntity<List<ChatResponseDTO>> findGroupChats(@AuthenticationPrincipal MyUserDetails userDetails) {
         ArrayList<ChatResponseDTO> chatsDTOs = chatService.findGroupChats(new ObjectId(userDetails.getUserId()));
         return ResponseEntity.ok(chatsDTOs);
+    }
+
+    @GetMapping("/groups/{id}")
+    public ResponseEntity<ChatResponseDTO> findGroupChat(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable("id") String groupId) {
+        ChatResponseDTO chatsDTO = chatService.findById(new ObjectId(userDetails.getUserId()), new ObjectId(groupId));
+        return ResponseEntity.ok(chatsDTO);
     }
 
     @PutMapping("/groups/{id}/host")
@@ -108,7 +115,6 @@ public class ChatController {
 
     @PutMapping("/private/add")
     public ResponseEntity<List<String>> addPrivateChat(@AuthenticationPrincipal MyUserDetails userDetails, @RequestBody AddPrivateChatDTO privateChatDTO) {
-        System.out.println("trigger");
         List<String> chatUsernames = userService.addPrivateChatToUser(new ObjectId(userDetails.getUserId()), privateChatDTO);
         return ResponseEntity.ok(chatUsernames);
     }
