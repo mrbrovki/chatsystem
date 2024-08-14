@@ -1,5 +1,8 @@
 package com.example.chatsystem.controller;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.example.chatsystem.dto.ChatResponseDTO;
 import com.example.chatsystem.dto.AddPrivateChatDTO;
 import com.example.chatsystem.dto.GroupChatCreateDTO;
@@ -13,7 +16,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,11 +27,13 @@ import java.util.List;
 public class ChatController {
     private final ChatService chatService;
     private final UserService userService;
+    private final AmazonS3 amazonS3;
 
     @Autowired
-    public ChatController(ChatService chatService, UserService userService) {
+    public ChatController(ChatService chatService, UserService userService, AmazonS3 amazonS3) {
         this.chatService = chatService;
         this.userService = userService;
+        this.amazonS3 = amazonS3;
     }
 
     @GetMapping
@@ -37,7 +44,18 @@ public class ChatController {
 
 
     @PostMapping("/groups")
-    public ResponseEntity<ChatResponseDTO> createGroupChat(@AuthenticationPrincipal MyUserDetails userDetails, @RequestBody GroupChatCreateDTO groupChatCreateDTO) {
+    public ResponseEntity<ChatResponseDTO> createGroupChat(@AuthenticationPrincipal MyUserDetails userDetails,
+                                                           @RequestPart("json") GroupChatCreateDTO groupChatCreateDTO,
+                                                           @RequestPart("avatar") MultipartFile avatarFile) {
+        try {
+            InputStream inputStream = avatarFile.getInputStream();
+            ObjectMetadata objectMetadata = new ObjectMetadata();
+            PutObjectRequest putObjectRequest = new PutObjectRequest("chatbucket69", userDetails.getUserId()+"avatar.jpg", inputStream, objectMetadata);
+            amazonS3.putObject(putObjectRequest);
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         ChatResponseDTO createdGroupChat = chatService.createGroupChat(new ObjectId(userDetails.getUserId()), groupChatCreateDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdGroupChat);
     }

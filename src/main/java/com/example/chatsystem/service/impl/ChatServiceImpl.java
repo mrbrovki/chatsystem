@@ -1,5 +1,8 @@
 package com.example.chatsystem.service.impl;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
 import com.example.chatsystem.dto.ChatResponseDTO;
 import com.example.chatsystem.dto.GroupChatCreateDTO;
 import com.example.chatsystem.exception.DocumentNotFoundException;
@@ -14,6 +17,7 @@ import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,12 +27,13 @@ public class ChatServiceImpl implements ChatService {
     private final ChatRepository chatRepository;
     private final UserService userService;
     private final WebSocketService webSocketService;
-
+    private final AmazonS3 s3Client;
     @Autowired
-    public ChatServiceImpl(ChatRepository chatRepository, UserService userService, WebSocketService webSocketService) {
+    public ChatServiceImpl(ChatRepository chatRepository, UserService userService, WebSocketService webSocketService, AmazonS3 s3Client) {
         this.chatRepository = chatRepository;
         this.userService = userService;
         this.webSocketService = webSocketService;
+        this.s3Client = s3Client;
     }
 
     @Override
@@ -225,11 +230,19 @@ public class ChatServiceImpl implements ChatService {
 
         for (ObjectId chatUserId : chatUserIds) {
             User receiver = userService.findById(chatUserId);
+            GetObjectRequest getObjectRequest = new GetObjectRequest("chatbucket69",
+                    "avatar_"+chatUserId.toHexString());
+            S3Object obj = s3Client.getObject(getObjectRequest);
+             //inputStream = obj.getObjectContent();
+
             chatDTOs.add(ChatResponseDTO.builder()
                             .name(receiver.getUsername())
                             .avatar(receiver.getAvatar())
+
+
                             .type(MessageType.PRIVATE)
                             .build());
+
         }
     }
 
