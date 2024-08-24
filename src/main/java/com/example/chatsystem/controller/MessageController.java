@@ -10,7 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -23,13 +22,6 @@ public class MessageController {
     public MessageController(MessageService messageService, ChatService chatService) {
         this.messageService = messageService;
         this.chatService = chatService;
-    }
-
-
-    @GetMapping("/")
-    public ResponseEntity<List<MessageDTO>> getAllMessages(@AuthenticationPrincipal MyUserDetails user) {
-        List<MessageDTO> messageDTOS = new ArrayList<>();
-        return ResponseEntity.ok(messageDTOS);
     }
 
     @GetMapping("/{username}")

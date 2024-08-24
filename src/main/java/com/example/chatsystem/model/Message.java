@@ -8,7 +8,6 @@ import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.LocalDateTime;
 @Document
 @Data
 @NoArgsConstructor
@@ -17,9 +16,9 @@ import java.time.LocalDateTime;
 public class Message {
     @Id
     private String id;
-    private LocalDateTime timestamp;
+    private long timestamp;
 
-    private String message;
+    private String content;
 
     private ObjectId senderId;
 

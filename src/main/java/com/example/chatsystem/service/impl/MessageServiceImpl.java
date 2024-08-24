@@ -16,7 +16,7 @@ import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -80,11 +80,10 @@ public class MessageServiceImpl implements MessageService {
 
                 if(!collectionExists(collectionName)){
                     if(!sender.getChats().contains(receiver.getUserId())){
-                        userService.addPrivateChatToUser(sender.getUserId(), receiver.getUserId());
+                        userService.addPrivateChatToUser(sender, receiver.getUserId());
                     }
                     if(!receiver.getChats().contains(sender.getUserId())){
-                        receiver.getChats().add(sender.getUserId());
-                        userService.addPrivateChatToUser(receiver.getUserId(), sender.getUserId());
+                        userService.addPrivateChatToUser(receiver, sender.getUserId());
                     }
                 }
 
@@ -95,7 +94,7 @@ public class MessageServiceImpl implements MessageService {
 
         message.setId(sender.getUserId().toHexString()+messageReceiveDTO.getTimestamp());
         message.setSenderId(sender.getUserId());
-        message.setMessage(messageReceiveDTO.getMessage());
+        message.setContent(messageReceiveDTO.getContent());
         message.setType(messageReceiveDTO.getType());
         message.setTimestamp(messageReceiveDTO.getTimestamp());
         saveMessage(collectionName, message);
@@ -114,7 +113,7 @@ public class MessageServiceImpl implements MessageService {
         List<MessageDTO> messageDTOS = new ArrayList<>();
         for (Message message : messages) {
             MessageDTO messageDTO = MessageDTO.builder()
-                    .message(message.getMessage())
+                    .content(message.getContent())
                     .timestamp(message.getTimestamp())
                     .build();
             if(message.getSenderId().toHexString().equals(userDetails.getUserId())){
@@ -139,7 +138,7 @@ public class MessageServiceImpl implements MessageService {
 
         for (Message message : messages) {
             MessageDTO messageDTO = MessageDTO.builder()
-                    .message(message.getMessage())
+                    .content(message.getContent())
                     .senderName(userService.findById(message.getSenderId()).getUsername())
                     .timestamp(message.getTimestamp())
                     .build();
@@ -150,12 +149,11 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public MessageReceiveDTO buildMessageReceiveDTO(MessageSendDTO messageSendDTO, String senderName) {
-        LocalDateTime now = LocalDateTime.now();
-
+        Instant instant = Instant.now();
         return MessageReceiveDTO.builder()
-                .timestamp(now)
+                .timestamp(instant.toEpochMilli())
                 .senderName(senderName)
-                .message(messageSendDTO.getMessage())
+                .content(messageSendDTO.getContent())
                 .type(messageSendDTO.getType())
                 .build();
     }
