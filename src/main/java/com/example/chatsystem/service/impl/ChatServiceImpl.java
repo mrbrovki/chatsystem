@@ -1,13 +1,13 @@
 package com.example.chatsystem.service.impl;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
-import com.example.chatsystem.dto.ChatResponseDTO;
-import com.example.chatsystem.dto.GroupChatCreateDTO;
+import com.example.chatsystem.dto.chat.ChatResponseDTO;
+import com.example.chatsystem.dto.chat.GroupChatResponseDTO;
+import com.example.chatsystem.dto.chat.GroupChatCreateDTO;
+import com.example.chatsystem.dto.chat.PrivateChatResponseDTO;
 import com.example.chatsystem.exception.DocumentNotFoundException;
+import com.example.chatsystem.model.ChatType;
 import com.example.chatsystem.model.GroupChat;
-import com.example.chatsystem.model.MessageType;
 import com.example.chatsystem.model.User;
 import com.example.chatsystem.repository.ChatRepository;
 import com.example.chatsystem.service.ChatService;
@@ -15,9 +15,9 @@ import com.example.chatsystem.service.UserService;
 import com.example.chatsystem.service.WebSocketService;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,13 +27,15 @@ public class ChatServiceImpl implements ChatService {
     private final ChatRepository chatRepository;
     private final UserService userService;
     private final WebSocketService webSocketService;
-    private final AmazonS3 s3Client;
+
+    @Value("${aws.avatars.url}")
+    private String avatarsUrl;
+
     @Autowired
-    public ChatServiceImpl(ChatRepository chatRepository, UserService userService, WebSocketService webSocketService, AmazonS3 s3Client) {
+    public ChatServiceImpl(ChatRepository chatRepository, UserService userService, WebSocketService webSocketService) {
         this.chatRepository = chatRepository;
         this.userService = userService;
         this.webSocketService = webSocketService;
-        this.s3Client = s3Client;
     }
 
     @Override
@@ -42,18 +44,18 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public ChatResponseDTO findById(ObjectId userId, ObjectId groupId) {
+    public GroupChatResponseDTO findById(ObjectId userId, ObjectId groupId) {
         GroupChat groupChat = findById(groupId);
         User user = userService.findById(groupChat.getHostId());
 
         if(groupChat.getMemberIds().contains(userId)){
-            return ChatResponseDTO.builder()
+            return GroupChatResponseDTO.builder()
                     .id(groupId.toHexString())
                     .members(groupChat.getMemberIds().stream().map(ObjectId::toHexString).collect(Collectors.toList()))
-                    .avatar(groupChat.getAvatar())
                     .name(groupChat.getName())
-                    .type(MessageType.GROUP)
                     .host(user.getUsername())
+                    .image(avatarsUrl + groupId.toHexString())
+                    .type(ChatType.GROUP)
                     .build();
         }
 
@@ -145,10 +147,9 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public ChatResponseDTO createGroupChat(ObjectId userId, GroupChatCreateDTO groupChatCreateDTO) {
+    public GroupChatResponseDTO createGroupChat(ObjectId userId, GroupChatCreateDTO groupChatCreateDTO) {
         GroupChat groupChat = GroupChat.builder()
                 .name(groupChatCreateDTO.getName())
-                .avatar(groupChatCreateDTO.getAvatar())
                 .hostId(userId)
                 .build();
 
@@ -172,37 +173,44 @@ public class ChatServiceImpl implements ChatService {
             webSocketService.subscribeUserToGroup(user.getUsername(), createdGroupchat.getId());
         }
 
-        return ChatResponseDTO.builder()
+        return GroupChatResponseDTO.builder()
                 .id(createdGroupchat.getId().toHexString())
                 .members(createdGroupchat.getMemberIds().stream().map(ObjectId::toHexString).collect(Collectors.toList()))
-                .avatar(createdGroupchat.getAvatar())
                 .name(createdGroupchat.getName())
-                .type(MessageType.GROUP)
                 .host(hostUser.getUsername())
+                .image(avatarsUrl + createdGroupchat.getId().toHexString())
+                .type(ChatType.GROUP)
                 .build();
     }
 
     @Override
-    public ArrayList<ChatResponseDTO> findAllChats(ObjectId userId) {
-        ArrayList<ChatResponseDTO> chatDTOs = new ArrayList<>();
+    public ChatResponseDTO findAllChats(ObjectId userId) {
+        User user = userService.findById(userId);
+
+        ArrayList<PrivateChatResponseDTO> privateChatDTOs = new ArrayList<>();
+        setUserPrivateChats(privateChatDTOs, user);
+
+        ArrayList<GroupChatResponseDTO> groupChatDTOs = new ArrayList<>();
+        setUserGroupChats(groupChatDTOs, user);
+
+        return ChatResponseDTO.builder()
+                .privateChats(privateChatDTOs)
+                .groupChats(groupChatDTOs)
+                .botChats(new ArrayList<>())
+                .build();
+    }
+
+    @Override
+    public ArrayList<PrivateChatResponseDTO> findPrivateChats(ObjectId userId) {
+        ArrayList<PrivateChatResponseDTO> chatDTOs = new ArrayList<>();
         User user = userService.findById(userId);
         setUserPrivateChats(chatDTOs, user);
-        setUserGroupChats(chatDTOs, user);
-        System.out.println(chatDTOs);
         return chatDTOs;
     }
 
     @Override
-    public ArrayList<ChatResponseDTO> findPrivateChats(ObjectId userId) {
-        ArrayList<ChatResponseDTO> chatDTOs = new ArrayList<>();
-        User user = userService.findById(userId);
-        setUserPrivateChats(chatDTOs, user);
-        return chatDTOs;
-    }
-
-    @Override
-    public ArrayList<ChatResponseDTO> findGroupChats(ObjectId userId) {
-        ArrayList<ChatResponseDTO> chatDTOs = new ArrayList<>();
+    public ArrayList<GroupChatResponseDTO> findGroupChats(ObjectId userId) {
+        ArrayList<GroupChatResponseDTO> chatDTOs = new ArrayList<>();
         User user = userService.findById(userId);
         setUserGroupChats(chatDTOs, user);
         return chatDTOs;
@@ -219,45 +227,36 @@ public class ChatServiceImpl implements ChatService {
         return memberNames;
     }
 
-
-
     private boolean isHost(GroupChat groupChat, ObjectId userId){
         return groupChat.getHostId().equals(userId);
     }
 
-    private void setUserPrivateChats(ArrayList<ChatResponseDTO> chatDTOs, User user) {
+    private void setUserPrivateChats(ArrayList<PrivateChatResponseDTO> chatDTOs, User user) {
         List<ObjectId> chatUserIds = user.getChats();
 
         for (ObjectId chatUserId : chatUserIds) {
             User receiver = userService.findById(chatUserId);
-            GetObjectRequest getObjectRequest = new GetObjectRequest("chatbucket69",
-                    "avatar_"+chatUserId.toHexString());
-            S3Object obj = s3Client.getObject(getObjectRequest);
-             //inputStream = obj.getObjectContent();
-
-            chatDTOs.add(ChatResponseDTO.builder()
-                            .name(receiver.getUsername())
-                            .avatar(receiver.getAvatar())
-
-
-                            .type(MessageType.PRIVATE)
-                            .build());
+            chatDTOs.add(PrivateChatResponseDTO.builder()
+                    .username(receiver.getUsername())
+                    .avatar(avatarsUrl + receiver.getUsername())
+                    .type(ChatType.PRIVATE)
+                    .build());
 
         }
     }
 
-    private void setUserGroupChats(ArrayList<ChatResponseDTO> chatDTOs, User user) {
+    private void setUserGroupChats(ArrayList<GroupChatResponseDTO> chatDTOs, User user) {
         List<ObjectId> groupChatIds = user.getGroupChats();
         for (ObjectId chatId : groupChatIds) {
             GroupChat groupChat = findById(chatId);
             User hostUser = userService.findById(groupChat.getHostId());
-            chatDTOs.add(ChatResponseDTO.builder()
+            chatDTOs.add(GroupChatResponseDTO.builder()
                     .id(chatId.toHexString())
                     .members(groupChat.getMemberIds().stream().map(ObjectId::toHexString).collect(Collectors.toList()))
-                    .avatar(groupChat.getAvatar())
                     .name(groupChat.getName())
-                    .type(MessageType.GROUP)
                     .host(hostUser.getUsername())
+                    .image(avatarsUrl + chatId.toHexString())
+                    .type(ChatType.GROUP)
                     .build());
         }
     }

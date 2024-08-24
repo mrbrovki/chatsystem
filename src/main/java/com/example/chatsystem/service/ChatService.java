@@ -1,7 +1,9 @@
 package com.example.chatsystem.service;
 
-import com.example.chatsystem.dto.ChatResponseDTO;
-import com.example.chatsystem.dto.GroupChatCreateDTO;
+import com.example.chatsystem.dto.chat.ChatResponseDTO;
+import com.example.chatsystem.dto.chat.GroupChatResponseDTO;
+import com.example.chatsystem.dto.chat.GroupChatCreateDTO;
+import com.example.chatsystem.dto.chat.PrivateChatResponseDTO;
 import com.example.chatsystem.model.GroupChat;
 import org.bson.types.ObjectId;
 
@@ -10,7 +12,7 @@ import java.util.ArrayList;
 public interface ChatService {
     GroupChat findById(ObjectId groupId);
 
-    ChatResponseDTO findById(ObjectId userId, ObjectId groupId);
+    GroupChatResponseDTO findById(ObjectId userId, ObjectId groupId);
 
     GroupChat updateGroupChat(GroupChat groupChat);
 
@@ -28,13 +30,13 @@ public interface ChatService {
 
     GroupChat changeGroupChatName(ObjectId userId, ObjectId chatId, String newName);
 
-    ChatResponseDTO createGroupChat(ObjectId userId, GroupChatCreateDTO groupChatCreateDTO);
+    GroupChatResponseDTO createGroupChat(ObjectId userId, GroupChatCreateDTO groupChatCreateDTO);
 
-    ArrayList<ChatResponseDTO> findAllChats(ObjectId userId);
+    ChatResponseDTO findAllChats(ObjectId userId);
 
-    ArrayList<ChatResponseDTO> findPrivateChats(ObjectId userId);
+    ArrayList<PrivateChatResponseDTO> findPrivateChats(ObjectId userId);
 
-    ArrayList<ChatResponseDTO> findGroupChats(ObjectId userId);
+    ArrayList<GroupChatResponseDTO> findGroupChats(ObjectId userId);
 
     ArrayList<String> findGroupChatMemberNames(ObjectId chatId);
 }
