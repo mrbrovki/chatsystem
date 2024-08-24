@@ -45,11 +45,10 @@ public class WebSocketServiceImpl implements WebSocketService {
         }
     }
 
-
     @Override
     public void subscribeUserToGroup(String username, ObjectId groupId) {
         MessageReceiveDTO message = MessageReceiveDTO.builder()
-                .message(groupId.toHexString())
+                .content(groupId.toHexString())
                 .type(MessageType.JOIN)
                 .build();
         sendPrivateMessage(username, message);
@@ -58,7 +57,7 @@ public class WebSocketServiceImpl implements WebSocketService {
     @Override
     public void unsubscribeUserToGroup(String username, ObjectId groupId) {
         MessageReceiveDTO message = MessageReceiveDTO.builder()
-                .message(groupId.toHexString())
+                .content(groupId.toHexString())
                 .type(MessageType.LEAVE)
                 .build();
         sendPrivateMessage(username, message);

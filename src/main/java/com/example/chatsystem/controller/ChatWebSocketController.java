@@ -29,7 +29,7 @@ public class ChatWebSocketController {
 
     @MessageMapping("/chat.sendMessage")
     public void sendMessage(@Payload MessageSendDTO messageSendDTO, SimpMessageHeaderAccessor headerAccessor) {
-        String senderName = headerAccessor.getUser().getName();;
+        String senderName = headerAccessor.getUser().getName();
         webSocketService.handleMessage(messageSendDTO, senderName);
     }
 }
