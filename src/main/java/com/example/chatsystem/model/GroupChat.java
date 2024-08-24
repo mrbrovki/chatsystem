@@ -21,4 +21,5 @@ public class GroupChat {
     private List<ObjectId> memberIds;
     private String name;
     private ObjectId hostId;
+    private String avatar;
 }

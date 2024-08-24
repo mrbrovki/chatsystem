@@ -22,6 +22,12 @@ public class ChatGPT {
     @Value("${openai.api.key}")
     private String openaiApiKey;
 
+    @Value("${openai.api.server}")
+    private String openaiApiServer;
+
+    @Value("${openai.api.endpoint}")
+    private String openaiApiEndpoint;
+
     private final MessageService messageService;
     private final MyUserDetailsService userDetailsService;
     private final WebSocketService webSocketService;
@@ -34,9 +40,9 @@ public class ChatGPT {
     }
 
     public BotResponseDTO prompt(BotRequestDTO botRequestDTO) {
-        WebClient client = WebClient.create("https://api.pawan.krd");
+        WebClient client = WebClient.create(openaiApiServer);
         Mono<BotResponseDTO> responseDTOMono = client.post()
-                .uri("/v1/chat/completions")
+                .uri(openaiApiEndpoint)
                 .headers(httpHeaders -> {
                     httpHeaders.setContentType(MediaType.APPLICATION_JSON);
                     httpHeaders.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));

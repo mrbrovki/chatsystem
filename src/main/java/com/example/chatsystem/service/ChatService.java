@@ -8,7 +8,9 @@ import org.bson.types.ObjectId;
 import java.util.ArrayList;
 
 public interface ChatService {
-    GroupChat findById(ObjectId id);
+    GroupChat findById(ObjectId groupId);
+
+    ChatResponseDTO findById(ObjectId userId, ObjectId groupId);
 
     GroupChat updateGroupChat(GroupChat groupChat);
 
@@ -26,7 +28,7 @@ public interface ChatService {
 
     GroupChat changeGroupChatName(ObjectId userId, ObjectId chatId, String newName);
 
-    GroupChat createGroupChat(ObjectId userId, GroupChatCreateDTO groupChatCreateDTO);
+    ChatResponseDTO createGroupChat(ObjectId userId, GroupChatCreateDTO groupChatCreateDTO);
 
     ArrayList<ChatResponseDTO> findAllChats(ObjectId userId);
 

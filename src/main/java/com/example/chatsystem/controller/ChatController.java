@@ -1,5 +1,8 @@
 package com.example.chatsystem.controller;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.example.chatsystem.dto.ChatResponseDTO;
 import com.example.chatsystem.dto.AddPrivateChatDTO;
 import com.example.chatsystem.dto.GroupChatCreateDTO;
@@ -13,7 +16,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,11 +27,13 @@ import java.util.List;
 public class ChatController {
     private final ChatService chatService;
     private final UserService userService;
+    private final AmazonS3 amazonS3;
 
     @Autowired
-    public ChatController(ChatService chatService, UserService userService) {
+    public ChatController(ChatService chatService, UserService userService, AmazonS3 amazonS3) {
         this.chatService = chatService;
         this.userService = userService;
+        this.amazonS3 = amazonS3;
     }
 
     @GetMapping
@@ -35,9 +42,21 @@ public class ChatController {
         return ResponseEntity.ok(chatsDTOs);
     }
 
+
     @PostMapping("/groups")
-    public ResponseEntity<GroupChat> createGroupChat(@AuthenticationPrincipal MyUserDetails userDetails, @RequestBody GroupChatCreateDTO groupChatCreateDTO) {
-        GroupChat createdGroupChat = chatService.createGroupChat(new ObjectId(userDetails.getUserId()), groupChatCreateDTO);
+    public ResponseEntity<ChatResponseDTO> createGroupChat(@AuthenticationPrincipal MyUserDetails userDetails,
+                                                           @RequestPart("json") GroupChatCreateDTO groupChatCreateDTO,
+                                                           @RequestPart("avatar") MultipartFile avatarFile) {
+        try {
+            InputStream inputStream = avatarFile.getInputStream();
+            ObjectMetadata objectMetadata = new ObjectMetadata();
+            PutObjectRequest putObjectRequest = new PutObjectRequest("chatbucket69", userDetails.getUserId()+"avatar.jpg", inputStream, objectMetadata);
+            amazonS3.putObject(putObjectRequest);
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        ChatResponseDTO createdGroupChat = chatService.createGroupChat(new ObjectId(userDetails.getUserId()), groupChatCreateDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdGroupChat);
     }
 
@@ -51,6 +70,12 @@ public class ChatController {
     public ResponseEntity<List<ChatResponseDTO>> findGroupChats(@AuthenticationPrincipal MyUserDetails userDetails) {
         ArrayList<ChatResponseDTO> chatsDTOs = chatService.findGroupChats(new ObjectId(userDetails.getUserId()));
         return ResponseEntity.ok(chatsDTOs);
+    }
+
+    @GetMapping("/groups/{id}")
+    public ResponseEntity<ChatResponseDTO> findGroupChat(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable("id") String groupId) {
+        ChatResponseDTO chatsDTO = chatService.findById(new ObjectId(userDetails.getUserId()), new ObjectId(groupId));
+        return ResponseEntity.ok(chatsDTO);
     }
 
     @PutMapping("/groups/{id}/host")
@@ -108,7 +133,6 @@ public class ChatController {
 
     @PutMapping("/private/add")
     public ResponseEntity<List<String>> addPrivateChat(@AuthenticationPrincipal MyUserDetails userDetails, @RequestBody AddPrivateChatDTO privateChatDTO) {
-        System.out.println("trigger");
         List<String> chatUsernames = userService.addPrivateChatToUser(new ObjectId(userDetails.getUserId()), privateChatDTO);
         return ResponseEntity.ok(chatUsernames);
     }

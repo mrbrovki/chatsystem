@@ -5,14 +5,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
-public class GroupChatCreateDTO {
-    private List<String> memberNames;
-    private String name;
-    private String avatar;
+public class EditUserDTO {
+    private String username;
+    private String password;
 }
