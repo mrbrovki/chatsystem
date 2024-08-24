@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -47,6 +48,14 @@ public class AuthenticationController {
         } else {
             throw new UsernameNotFoundException("invalid user request..!!");
         }
+    }
+
+    @GetMapping("/authenticate")
+    public JwtResponseDTO authenticate(@AuthenticationPrincipal MyUserDetails userDetails) {
+        return JwtResponseDTO.builder()
+                .accessToken(jwtService.GenerateToken(userDetails.getUsername(), userDetails.getUserId()))
+                .username(userDetails.getUsername())
+                .build();
     }
 
     @PostMapping("/signup")
