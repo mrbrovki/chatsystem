@@ -18,7 +18,6 @@ import java.util.List;
 public class User {
     @Id
     private ObjectId userId;
-    private String avatar;
     private String username;
     private String email;
     private String hashedPassword;

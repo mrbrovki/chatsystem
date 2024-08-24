@@ -1,23 +1,34 @@
 package com.example.chatsystem.service.impl;
 
-import com.example.chatsystem.dto.AddPrivateChatDTO;
+import com.example.chatsystem.dto.EditUserDTO;
+import com.example.chatsystem.dto.chat.AddPrivateChatDTO;
+import com.example.chatsystem.dto.chat.PrivateChatResponseDTO;
 import com.example.chatsystem.exception.DocumentNotFoundException;
+import com.example.chatsystem.model.ChatType;
 import com.example.chatsystem.model.User;
 import com.example.chatsystem.repository.UserRepository;
 import com.example.chatsystem.service.UserService;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    @Value("${aws.avatars.url}")
+    private String avatarsUrl;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -26,8 +37,32 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<User> findAll() {
-        return userRepository.findAll();
+    public EditUserDTO edit(ObjectId userId, EditUserDTO editRequest) {
+        User user = findById(userId);
+        user.setUsername(editRequest.getUsername());
+        user.setHashedPassword(passwordEncoder.encode(editRequest.getPassword()));
+
+        create(user);
+
+        return EditUserDTO.builder()
+                .username(user.getUsername())
+                .avatar(avatarsUrl + user.getUsername())
+                .build();
+    }
+
+    @Override
+    public List<PrivateChatResponseDTO> findAll() {
+        List<User> users = userRepository.findAll();
+        List<PrivateChatResponseDTO> privateChatResponseDTOS = new ArrayList<>();
+        for (User user : users) {
+            PrivateChatResponseDTO privateChatResponseDTO = PrivateChatResponseDTO.builder()
+                    .username(user.getUsername())
+                    .avatar(avatarsUrl + user.getUsername())
+                    .type(ChatType.PRIVATE)
+                    .build();
+            privateChatResponseDTOS.add(privateChatResponseDTO);
+        }
+        return privateChatResponseDTOS;
     }
 
     @Override
@@ -51,8 +86,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<String> addPrivateChatToUser(ObjectId userId,  ObjectId chatUserId) {
-        User user = findById(userId);
+    public List<String> addPrivateChatToUser(User user,  ObjectId chatUserId) {
         List<ObjectId> chats = user.getChats();
         User targetUser = findById(chatUserId);
         chats.add(targetUser.getUserId());
