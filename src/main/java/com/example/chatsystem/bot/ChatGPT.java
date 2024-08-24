@@ -69,7 +69,7 @@ public class ChatGPT {
 
         messageDTOs.forEach(element -> {
             Message message = new Message();
-            message.setContent(element.getMessage());
+            message.setContent(element.getContent());
             if(bots.containsKey(element.getSenderName())){
                 message.setRole("assistant");
             }else{
@@ -87,7 +87,7 @@ public class ChatGPT {
         Choice choice = botResponseDTO.getChoices().getFirst();
         String messageContent = choice.getMessage().getContent();
         MessageSendDTO botSendDTO = MessageSendDTO.builder()
-                .message(messageContent)
+                .content(messageContent)
                 .receiverName(senderName)
                 .type(MessageType.PRIVATE)
                 .build();
