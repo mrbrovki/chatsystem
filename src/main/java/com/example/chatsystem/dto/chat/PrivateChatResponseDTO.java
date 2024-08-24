@@ -1,5 +1,6 @@
-package com.example.chatsystem.dto;
+package com.example.chatsystem.dto.chat;
 
+import com.example.chatsystem.model.ChatType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,8 +10,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class EditUserDTO {
-    private String avatar;
+public class PrivateChatResponseDTO {
     private String username;
-    private String password;
+    private String avatar;
+    private ChatType type;
 }

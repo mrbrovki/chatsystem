@@ -12,9 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class MessageSendDTO {
-    private String message;
-
+    private String content;
     private String receiverName;
-
     private MessageType type;
 }

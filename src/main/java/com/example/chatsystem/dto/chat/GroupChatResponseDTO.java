@@ -1,6 +1,6 @@
-package com.example.chatsystem.dto;
+package com.example.chatsystem.dto.chat;
 
-import com.example.chatsystem.model.MessageType;
+import com.example.chatsystem.model.ChatType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,11 +12,11 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class ChatResponseDTO {
-    private MessageType type;
+public class GroupChatResponseDTO {
+    private ChatType type;
     private String id;
     private List<String> members;
     private String name;
     private String host;
-    private String avatar;
+    private String image;
 }
