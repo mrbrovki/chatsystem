@@ -19,12 +19,13 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 public class SecurityConfiguration {
 
-    private JwtAuthFilter jwtAuthFilter;
-    private MyUserDetailsService myUserDetailsService;
+    private final JwtAuthFilter jwtAuthFilter;
+    private final MyUserDetailsService myUserDetailsService;
 
     @Autowired
     public SecurityConfiguration(JwtAuthFilter jwtAuthFilter, MyUserDetailsService myUserDetailsService){
@@ -44,6 +45,7 @@ public class SecurityConfiguration {
         http.csrf(AbstractHttpConfigurer::disable);
         http.authorizeHttpRequests(configurer ->
                         configurer
+                                .requestMatchers("/api/v3/auth/authenticate").authenticated()
                                 .requestMatchers("/api/v3/auth/**").permitAll()
                                 .requestMatchers("/api/**").authenticated()
                                 .requestMatchers("/ws/**").permitAll()
@@ -63,9 +65,9 @@ public class SecurityConfiguration {
 
     @Bean CorsConfiguration corsConfiguration(){
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
+        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         return configuration;
     }
