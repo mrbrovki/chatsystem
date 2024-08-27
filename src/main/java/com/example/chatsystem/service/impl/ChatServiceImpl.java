@@ -263,8 +263,6 @@ public class ChatServiceImpl implements ChatService {
 
     public static String getPrivateChatCollectionName(ObjectId senderId, ObjectId receiverId){
         String collectionName = "chat_";
-        System.out.println(senderId);
-        System.out.println(receiverId);
         if(senderId.getTimestamp() < receiverId.getTimestamp()){
             collectionName += senderId + "&" + receiverId;
         }else if(senderId.getTimestamp() > receiverId.getTimestamp()){

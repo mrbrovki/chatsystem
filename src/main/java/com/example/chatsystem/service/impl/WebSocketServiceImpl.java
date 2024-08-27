@@ -10,6 +10,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
+import java.util.HashMap;
+import java.util.Map;
+
 @Service
 public class WebSocketServiceImpl implements WebSocketService {
 
@@ -43,6 +47,14 @@ public class WebSocketServiceImpl implements WebSocketService {
             case PRIVATE -> sendPrivateMessage(messageSendDTO.getReceiverName(), messageReceiveDTO);
             case GROUP -> sendGroupMessage(messageSendDTO.getReceiverName(), messageReceiveDTO);
         }
+    }
+
+    @Override
+    public void handleImage(byte[] payload, String imageType, String senderName, String receiverName){
+        messageService.persistImage(new ByteArrayInputStream(payload), imageType, senderName, receiverName);
+        Map<String, Object> headers = new HashMap<>();
+        headers.put("contentType", imageType);
+        messagingTemplate.convertAndSendToUser(receiverName, "/queue/messages", payload, headers);
     }
 
     @Override

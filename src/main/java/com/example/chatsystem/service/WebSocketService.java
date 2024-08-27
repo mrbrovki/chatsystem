@@ -12,6 +12,8 @@ public interface WebSocketService {
 
     void handleMessage(MessageSendDTO messageSendDTO, String senderName);
 
+    void handleImage(byte[] payload, String imageType, String senderName, String receiverName);
+
     void subscribeUserToGroup(String username, ObjectId groupId);
 
     void unsubscribeUserToGroup(String username, ObjectId groupId);

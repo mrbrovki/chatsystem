@@ -1,5 +1,7 @@
 package com.example.chatsystem.controller;
 
+import com.example.chatsystem.config.websocket.aws.S3File;
+import com.example.chatsystem.dto.ImageRequestDTO;
 import com.example.chatsystem.dto.MessageDTO;
 import com.example.chatsystem.security.MyUserDetails;
 import com.example.chatsystem.service.ChatService;
@@ -10,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -22,6 +25,18 @@ public class MessageController {
     public MessageController(MessageService messageService, ChatService chatService) {
         this.messageService = messageService;
         this.chatService = chatService;
+    }
+
+    @GetMapping("/")
+    public ResponseEntity<List<MessageDTO>> getAllMessages(@AuthenticationPrincipal MyUserDetails user) {
+        List<MessageDTO> messageDTOS = new ArrayList<>();
+        return ResponseEntity.ok(messageDTOS);
+    }
+
+    @PostMapping(value = "/images/{id}")
+    public ResponseEntity<byte[]> getImage(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable("id") String imageId, @RequestBody ImageRequestDTO imageRequestDTO) {
+        S3File file = messageService.findImageById(userDetails, imageRequestDTO, imageId);
+        return ResponseEntity.ok().contentType(file.getContentType()).body(file.getData());
     }
 
     @GetMapping("/{username}")

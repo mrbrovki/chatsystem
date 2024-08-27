@@ -1,5 +1,8 @@
 package com.example.chatsystem.service.impl;
 
+import com.amazonaws.services.s3.model.PutObjectResult;
+import com.example.chatsystem.config.websocket.aws.S3File;
+import com.example.chatsystem.dto.ImageRequestDTO;
 import com.example.chatsystem.dto.MessageDTO;
 import com.example.chatsystem.dto.MessageReceiveDTO;
 import com.example.chatsystem.dto.MessageSendDTO;
@@ -11,11 +14,13 @@ import com.example.chatsystem.model.User;
 import com.example.chatsystem.repository.MessageRepository;
 import com.example.chatsystem.security.MyUserDetails;
 import com.example.chatsystem.service.MessageService;
+import com.example.chatsystem.service.S3Service;
 import com.example.chatsystem.service.UserService;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,12 +28,13 @@ import java.util.List;
 @Service
 public class MessageServiceImpl implements MessageService {
     private final MessageRepository messageRepository;
-
+    private final S3Service s3Service;
     private final UserService userService;
 
     @Autowired
-    public MessageServiceImpl(MessageRepository messageRepository, UserService userService) {
+    public MessageServiceImpl(MessageRepository messageRepository, S3Service s3Service, UserService userService) {
         this.messageRepository = messageRepository;
+        this.s3Service = s3Service;
         this.userService = userService;
     }
 
@@ -101,6 +107,29 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
+    public void persistImage(InputStream inputStream, String imageType, String senderName, String receiverName){
+        User sender = userService.findByUsername(senderName);
+        User receiver = userService.findByUsername(receiverName);
+
+        Message message = new Message();
+        String collectionName = ChatServiceImpl.getPrivateChatCollectionName(sender.getUserId(), receiver.getUserId());
+
+        long timestamp = Instant.now().toEpochMilli();
+        String messageId = sender.getUserId().toHexString()+timestamp;
+
+        //upload to s3
+        String key = collectionName + "/" + messageId;
+        PutObjectResult result = s3Service.uploadChatImage(inputStream, imageType, key);
+
+        message.setId(messageId);
+        message.setSenderId(sender.getUserId());
+        message.setContent("http://localhost:8080/api/v2/messages/images/" + timestamp);
+        message.setType(MessageType.IMAGE);
+        message.setTimestamp(timestamp);
+        saveMessage(collectionName, message);
+    }
+
+    @Override
     public boolean collectionExists(String collectionName) {
         return messageRepository.collectionExists(collectionName);
     }
@@ -113,6 +142,7 @@ public class MessageServiceImpl implements MessageService {
         List<MessageDTO> messageDTOS = new ArrayList<>();
         for (Message message : messages) {
             MessageDTO messageDTO = MessageDTO.builder()
+                    .type(message.getType())
                     .content(message.getContent())
                     .timestamp(message.getTimestamp())
                     .build();
@@ -138,6 +168,7 @@ public class MessageServiceImpl implements MessageService {
 
         for (Message message : messages) {
             MessageDTO messageDTO = MessageDTO.builder()
+                    .type(message.getType())
                     .content(message.getContent())
                     .senderName(userService.findById(message.getSenderId()).getUsername())
                     .timestamp(message.getTimestamp())
@@ -156,5 +187,19 @@ public class MessageServiceImpl implements MessageService {
                 .content(messageSendDTO.getContent())
                 .type(messageSendDTO.getType())
                 .build();
+    }
+
+    @Override
+    public S3File findImageById(MyUserDetails userDetails, ImageRequestDTO imageRequestDTO, String imageId) {
+        ObjectId userId = new ObjectId(userDetails.getUserId());
+        ObjectId userId2 = userService.findByUsername(imageRequestDTO.getChatName()).getUserId();
+        ObjectId senderId = null;
+        if(userDetails.getUsername().equals(imageRequestDTO.getSenderName())){
+            senderId = userId;
+        }else{
+            senderId = userId2;
+        }
+        String key = ChatServiceImpl.getPrivateChatCollectionName(userId, userId2) + "/" + senderId.toHexString() + imageId;
+        return s3Service.getChatImage(key);
     }
 }

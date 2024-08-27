@@ -27,6 +27,14 @@ public class ChatWebSocketController {
         chatGPT.handleMessageToBot(messageSendDTO, senderName);
     }
 
+    @MessageMapping("/chat.sendImage")
+    public void sendImage(@Payload byte[] payload, SimpMessageHeaderAccessor headerAccessor) {
+        String senderName = headerAccessor.getUser().getName();
+        String imageType = headerAccessor.getNativeHeader("image-type").get(0);
+        String receiverName = headerAccessor.getNativeHeader("receiver-name").get(0);
+        webSocketService.handleImage(payload, imageType, senderName, receiverName);
+    }
+
     @MessageMapping("/chat.sendMessage")
     public void sendMessage(@Payload MessageSendDTO messageSendDTO, SimpMessageHeaderAccessor headerAccessor) {
         String senderName = headerAccessor.getUser().getName();

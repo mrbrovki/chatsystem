@@ -4,5 +4,6 @@ public enum MessageType {
     GROUP,
     PRIVATE,
     JOIN,
-    LEAVE
+    LEAVE,
+    IMAGE
 }
