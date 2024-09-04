@@ -1,9 +1,6 @@
 package com.example.chatsystem.service;
 
-import com.example.chatsystem.dto.chat.ChatResponseDTO;
-import com.example.chatsystem.dto.chat.GroupChatResponseDTO;
-import com.example.chatsystem.dto.chat.GroupChatCreateDTO;
-import com.example.chatsystem.dto.chat.PrivateChatResponseDTO;
+import com.example.chatsystem.dto.chat.*;
 import com.example.chatsystem.model.GroupChat;
 import org.bson.types.ObjectId;
 
@@ -37,6 +34,8 @@ public interface ChatService {
     ArrayList<PrivateChatResponseDTO> findPrivateChats(ObjectId userId);
 
     ArrayList<GroupChatResponseDTO> findGroupChats(ObjectId userId);
+
+    ArrayList<BotChatResponseDTO> findBotChats(ObjectId userId);
 
     ArrayList<String> findGroupChatMemberNames(ObjectId chatId);
 }

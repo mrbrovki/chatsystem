@@ -65,7 +65,8 @@ public class AuthenticationController {
                 .username(signupDTO.getUsername())
                 .hashedPassword(passwordEncoder.encode(signupDTO.getPassword()))
                 .groupChats(new ArrayList<>())
-                .chats(new ArrayList<>())
+                .privateChats(new ArrayList<>())
+                .botChats(new ArrayList<>())
                 .build();
         userService.create(newUser);
         return ResponseEntity.ok(newUser.getEmail());

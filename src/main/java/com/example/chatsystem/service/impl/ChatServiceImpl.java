@@ -1,10 +1,8 @@
 package com.example.chatsystem.service.impl;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.example.chatsystem.dto.chat.ChatResponseDTO;
-import com.example.chatsystem.dto.chat.GroupChatResponseDTO;
-import com.example.chatsystem.dto.chat.GroupChatCreateDTO;
-import com.example.chatsystem.dto.chat.PrivateChatResponseDTO;
+import com.example.chatsystem.bot.Bot;
+import com.example.chatsystem.bot.BotService;
+import com.example.chatsystem.dto.chat.*;
 import com.example.chatsystem.exception.DocumentNotFoundException;
 import com.example.chatsystem.model.ChatType;
 import com.example.chatsystem.model.GroupChat;
@@ -27,15 +25,17 @@ public class ChatServiceImpl implements ChatService {
     private final ChatRepository chatRepository;
     private final UserService userService;
     private final WebSocketService webSocketService;
+    private final BotService botService;
 
     @Value("${aws.avatars.url}")
     private String avatarsUrl;
 
     @Autowired
-    public ChatServiceImpl(ChatRepository chatRepository, UserService userService, WebSocketService webSocketService) {
+    public ChatServiceImpl(ChatRepository chatRepository, UserService userService, WebSocketService webSocketService, BotService botService) {
         this.chatRepository = chatRepository;
         this.userService = userService;
         this.webSocketService = webSocketService;
+        this.botService = botService;
     }
 
     @Override
@@ -193,10 +193,13 @@ public class ChatServiceImpl implements ChatService {
         ArrayList<GroupChatResponseDTO> groupChatDTOs = new ArrayList<>();
         setUserGroupChats(groupChatDTOs, user);
 
+        ArrayList<BotChatResponseDTO> botChatDTOs = new ArrayList<>();
+        setUserBotChats(botChatDTOs, user);
+
         return ChatResponseDTO.builder()
                 .privateChats(privateChatDTOs)
                 .groupChats(groupChatDTOs)
-                .botChats(new ArrayList<>())
+                .botChats(botChatDTOs)
                 .build();
     }
 
@@ -217,6 +220,14 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
+    public ArrayList<BotChatResponseDTO> findBotChats(ObjectId userId){
+        ArrayList<BotChatResponseDTO> botChatDTOs = new ArrayList<>();
+        User user = userService.findById(userId);
+        setUserBotChats(botChatDTOs, user);
+        return botChatDTOs;
+    }
+
+    @Override
     public ArrayList<String> findGroupChatMemberNames(ObjectId chatId){
         ArrayList<String> memberNames = new ArrayList<>();
         GroupChat groupChat = findById(chatId);
@@ -232,7 +243,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     private void setUserPrivateChats(ArrayList<PrivateChatResponseDTO> chatDTOs, User user) {
-        List<ObjectId> chatUserIds = user.getChats();
+        List<ObjectId> chatUserIds = user.getPrivateChats();
 
         for (ObjectId chatUserId : chatUserIds) {
             User receiver = userService.findById(chatUserId);
@@ -261,8 +272,22 @@ public class ChatServiceImpl implements ChatService {
         }
     }
 
-    public static String getPrivateChatCollectionName(ObjectId senderId, ObjectId receiverId){
-        String collectionName = "chat_";
+    private void setUserBotChats(ArrayList<BotChatResponseDTO> chatDTOs, User user) {
+        List<ObjectId> botIds = user.getBotChats();
+        for (ObjectId botId : botIds) {
+            Bot bot = botService.getBotById(botId);
+            chatDTOs.add(BotChatResponseDTO.builder()
+                            .botName(bot.getName())
+                            .type(ChatType.BOT)
+                    .build());
+        }
+    }
+
+    public static String buildCollectionName(ObjectId senderId, ObjectId receiverId, ChatType chatType){
+        String collectionName = chatType.name() + "_";
+        if(receiverId == null){
+            return collectionName + senderId.toHexString();
+        }
         if(senderId.getTimestamp() < receiverId.getTimestamp()){
             collectionName += senderId + "&" + receiverId;
         }else if(senderId.getTimestamp() > receiverId.getTimestamp()){

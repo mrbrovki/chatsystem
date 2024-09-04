@@ -1,13 +1,13 @@
 package com.example.chatsystem.bot;
 
 import com.example.chatsystem.dto.*;
+import com.example.chatsystem.exception.DocumentNotFoundException;
 import com.example.chatsystem.model.MessageType;
-import com.example.chatsystem.security.MyUserDetails;
-import com.example.chatsystem.security.MyUserDetailsService;
-import com.example.chatsystem.service.MessageService;
-import com.example.chatsystem.service.WebSocketService;
+import com.example.chatsystem.repository.BotRepository;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Example;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -16,9 +16,7 @@ import reactor.core.publisher.Mono;
 import java.util.*;
 
 @Service
-public class ChatGPT {
-    public static HashMap<String, String> bots = new HashMap<>();
-
+public class BotService {
     @Value("${openai.api.key}")
     private String openaiApiKey;
 
@@ -28,16 +26,29 @@ public class ChatGPT {
     @Value("${openai.api.endpoint}")
     private String openaiApiEndpoint;
 
-    private final MessageService messageService;
-    private final MyUserDetailsService userDetailsService;
-    private final WebSocketService webSocketService;
+    @Value("${openai.api.model}")
+    private String model;
+
+    private final BotRepository botRepository;
 
     @Autowired
-    public ChatGPT(MessageService messageService, MyUserDetailsService userDetailsService, WebSocketService webSocketService) {
-        this.messageService = messageService;
-        this.userDetailsService = userDetailsService;
-        this.webSocketService = webSocketService;
+    public BotService(BotRepository botRepository) {
+        this.botRepository = botRepository;
     }
+
+    public Bot createBot(Bot bot) {
+        return botRepository.save(bot);
+    }
+
+    public Bot getBotById(ObjectId id) {
+        return botRepository.findById(id).orElseThrow(()->new DocumentNotFoundException("Bot " + id.toHexString() + " not found!"));
+    }
+
+    public Bot getBotByName(String name) {
+        Example<Bot> example = Example.of(Bot.builder().name(name).build());
+        return botRepository.findOne(example).orElseThrow(()->new DocumentNotFoundException("Bot " + name + " not found!"));
+    }
+
 
     public BotResponseDTO prompt(BotRequestDTO botRequestDTO) {
         WebClient client = WebClient.create(openaiApiServer);
@@ -53,24 +64,19 @@ public class ChatGPT {
         return responseDTOMono.block();
     }
 
-    public void handleMessageToBot(MessageSendDTO messageSendDTO, String senderName) {
+    public MessageSendDTO handleMessage(List<MessageDTO> messageDTOs, MessageSendDTO messageSendDTO, String senderName){
         String botName = messageSendDTO.getReceiverName();
-        //  persist new message
-        MessageReceiveDTO messageReceiveDTO = messageService.buildMessageReceiveDTO(messageSendDTO, senderName);
-        messageService.persistMessage(messageSendDTO, messageReceiveDTO, messageSendDTO.getType());
-
-        //  pull messages
-        MyUserDetails userDetails = userDetailsService.loadUserByUsername(senderName);
-        List<MessageDTO> messageDTOs = messageService.getChatMessages(userDetails, botName);
 
         List<Message> messages = new ArrayList<>();
+
         //  add training message
-        messages.add(Message.builder().content(bots.get(botName)).role("user").build());
+        Bot bot = getBotByName(botName);
+        messages.add(Message.builder().content(bot.getInfo()).role("user").build());
 
         messageDTOs.forEach(element -> {
             Message message = new Message();
             message.setContent(element.getContent());
-            if(bots.containsKey(element.getSenderName())){
+            if(bot.getName().equals(element.getSenderName())){
                 message.setRole("assistant");
             }else{
                 message.setRole("user");
@@ -78,24 +84,20 @@ public class ChatGPT {
             messages.add(message);
         });
 
-        BotRequestDTO chatRequestDTO = BotRequestDTO.builder()
-                .model("gpt-3.5-unfiltered")
-                .temperature(1)
+        BotRequestDTO botRequestDTO = BotRequestDTO.builder()
+                .model(model)
                 .messages(messages)
                 .build();
-        BotResponseDTO botResponseDTO = prompt(chatRequestDTO);
+        BotResponseDTO botResponseDTO = prompt(botRequestDTO);
+
         Choice choice = botResponseDTO.getChoices().getFirst();
         String messageContent = choice.getMessage().getContent();
-        MessageSendDTO botSendDTO = MessageSendDTO.builder()
+
+        return MessageSendDTO.builder()
                 .content(messageContent)
                 .receiverName(senderName)
-                .type(MessageType.PRIVATE)
+                .type(MessageType.TEXT)
                 .build();
-        //  persist bot answer
-        MessageReceiveDTO botReceiveDTO = messageService.buildMessageReceiveDTO(botSendDTO, botName);
-        messageService.persistMessage(botSendDTO, botReceiveDTO, botReceiveDTO.getType());
-
-        webSocketService.sendPrivateMessage(senderName, botReceiveDTO);
     }
 }
 
