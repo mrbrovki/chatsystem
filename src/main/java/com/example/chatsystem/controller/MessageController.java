@@ -39,11 +39,18 @@ public class MessageController {
         return ResponseEntity.ok().contentType(file.getContentType()).body(file.getData());
     }
 
-    @GetMapping("/{username}")
-    public ResponseEntity<List<MessageDTO>> getMessages(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable String username){
-        List<MessageDTO> messageDTOS = messageService.getChatMessages(userDetails, username);
+    @GetMapping("/users/{username}")
+    public ResponseEntity<List<MessageDTO>> getPrivateMessages(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable String username){
+        List<MessageDTO> messageDTOS = messageService.getPrivateChatMessages(userDetails, username);
         return ResponseEntity.ok(messageDTOS);
     }
+
+    @GetMapping("/bots/{botName}")
+    public ResponseEntity<List<MessageDTO>> getBotChatMessages(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable String botName){
+        List<MessageDTO> messageDTOS = messageService.getBotChatMessages(userDetails, botName);
+        return ResponseEntity.ok(messageDTOS);
+    }
+
 
     @GetMapping("/groups/{groupId}")
     public ResponseEntity<List<MessageDTO>> getGroupChatMessages(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable String groupId){

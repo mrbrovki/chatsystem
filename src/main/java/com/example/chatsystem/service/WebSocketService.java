@@ -10,9 +10,15 @@ public interface WebSocketService {
 
     void sendGroupMessage(String groupId, MessageReceiveDTO message);
 
-    void handleMessage(MessageSendDTO messageSendDTO, String senderName);
+    void handleMessageToBot(MessageSendDTO messageSendDTO, String senderName);
 
-    void handleImage(byte[] payload, String imageType, String senderName, String receiverName);
+    void handlePrivateMessage(MessageSendDTO messageSendDTO, String senderName);
+
+    void handleGroupMessage(MessageSendDTO messageSendDTO, String senderName);
+
+    void handleImageToBot(byte[] payload, String imageType, String senderName, String receiverName);
+    void handleImageToPrivate(byte[] payload, String imageType, String senderName, String receiverName);
+    void handleImageToGroup(byte[] payload, String imageType, String senderName, String receiverName);
 
     void subscribeUserToGroup(String username, ObjectId groupId);
 

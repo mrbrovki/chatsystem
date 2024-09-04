@@ -7,8 +7,8 @@ import com.example.chatsystem.exception.DocumentNotFoundException;
 import com.example.chatsystem.model.ChatType;
 import com.example.chatsystem.model.GroupChat;
 import com.example.chatsystem.model.User;
-import com.example.chatsystem.repository.ChatRepository;
 import com.example.chatsystem.service.ChatService;
+import com.example.chatsystem.service.GroupChatService;
 import com.example.chatsystem.service.UserService;
 import com.example.chatsystem.service.WebSocketService;
 import org.bson.types.ObjectId;
@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class ChatServiceImpl implements ChatService {
-    private final ChatRepository chatRepository;
+    private final GroupChatService groupChatService;
     private final UserService userService;
     private final WebSocketService webSocketService;
     private final BotService botService;
@@ -31,8 +31,8 @@ public class ChatServiceImpl implements ChatService {
     private String avatarsUrl;
 
     @Autowired
-    public ChatServiceImpl(ChatRepository chatRepository, UserService userService, WebSocketService webSocketService, BotService botService) {
-        this.chatRepository = chatRepository;
+    public ChatServiceImpl(GroupChatService groupChatService, UserService userService, WebSocketService webSocketService, BotService botService) {
+        this.groupChatService = groupChatService;
         this.userService = userService;
         this.webSocketService = webSocketService;
         this.botService = botService;
@@ -40,7 +40,7 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public GroupChat findById(ObjectId id) {
-        return chatRepository.findById(id).orElseThrow(()->new DocumentNotFoundException("Chat " + id.toHexString() + " not found"));
+        return groupChatService.findById(id).orElseThrow(()->new DocumentNotFoundException("Chat " + id.toHexString() + " not found"));
     }
 
     @Override
@@ -64,7 +64,7 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public GroupChat updateGroupChat(GroupChat groupChat) {
-        return chatRepository.update(groupChat);
+        return groupChatService.save(groupChat);
     }
 
     @Override
@@ -85,7 +85,7 @@ public class ChatServiceImpl implements ChatService {
             for (ObjectId memberId : memberIds) {
                 webSocketService.unsubscribeUserToGroup(userService.findById(memberId).getUsername(), chatId);
             }
-            chatRepository.delete(groupChat);
+            groupChatService.delete(groupChat);
         }
     }
 
@@ -165,7 +165,7 @@ public class ChatServiceImpl implements ChatService {
 
         groupChat.setMemberIds(memberIds);
 
-        GroupChat createdGroupchat = chatRepository.save(groupChat);
+        GroupChat createdGroupchat = groupChatService.save(groupChat);
 
         for (ObjectId memberId : memberIds) {
             User user = userService.findById(memberId);

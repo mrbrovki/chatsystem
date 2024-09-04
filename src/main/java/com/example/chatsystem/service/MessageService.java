@@ -5,9 +5,9 @@ import com.example.chatsystem.dto.ImageRequestDTO;
 import com.example.chatsystem.dto.MessageDTO;
 import com.example.chatsystem.dto.MessageReceiveDTO;
 import com.example.chatsystem.dto.MessageSendDTO;
+import com.example.chatsystem.model.ChatType;
 import com.example.chatsystem.model.GroupChat;
 import com.example.chatsystem.model.Message;
-import com.example.chatsystem.model.MessageType;
 import com.example.chatsystem.security.MyUserDetails;
 import org.bson.types.ObjectId;
 
@@ -28,15 +28,22 @@ public interface MessageService{
 
     void deleteAllMessages(String collectionName);
 
-    void persistMessage(MessageSendDTO messageSendDTO, MessageReceiveDTO messageReceiveDTO, MessageType messageType);
+    void persistPrivateMessage(MessageSendDTO messageSendDTO, MessageReceiveDTO messageReceiveDTO);
 
-    void persistImage(InputStream inputStream, String imageType, String senderName, String receiverName);
+    void persistBotMessage(MessageReceiveDTO messageReceiveDTO, ObjectId senderId, ObjectId receiverId);
+
+    void persistGroupMessage(MessageSendDTO messageSendDTO, MessageReceiveDTO messageReceiveDTO);
+
+    void persistImage(InputStream inputStream, String imageType, ObjectId senderId, ObjectId receiverId, ChatType chatType);
 
     boolean collectionExists(String collectionName);
 
-    List<MessageDTO> getChatMessages(MyUserDetails userDetails, String targetUserName);
+    List<MessageDTO> getPrivateChatMessages(MyUserDetails userDetails, String targetUserName);
+
+    List<MessageDTO> getBotChatMessages(MyUserDetails userDetails, String botName);
 
     List<MessageDTO> getGroupChatMessages(MyUserDetails userDetails, GroupChat groupChat);
+
 
     MessageReceiveDTO buildMessageReceiveDTO(MessageSendDTO messageSendDTO, String senderName);
 
