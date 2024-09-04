@@ -78,7 +78,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<String> addPrivateChatToUser(ObjectId userId, AddPrivateChatDTO privateChatDTO) {
         User user = findById(userId);
-        List<ObjectId> chats = user.getChats();
+        List<ObjectId> chats = user.getPrivateChats();
         User targetUser = findByUsername(privateChatDTO.getUsername());
         chats.add(targetUser.getUserId());
         userRepository.update(user);
@@ -87,7 +87,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<String> addPrivateChatToUser(User user,  ObjectId chatUserId) {
-        List<ObjectId> chats = user.getChats();
+        List<ObjectId> chats = user.getPrivateChats();
         User targetUser = findById(chatUserId);
         chats.add(targetUser.getUserId());
         userRepository.update(user);
@@ -97,7 +97,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<String> removePrivateChatFromUser(ObjectId userId, AddPrivateChatDTO privateChatDTO) {
         User user = findById(userId);
-        List<ObjectId> chats = user.getChats();
+        List<ObjectId> chats = user.getPrivateChats();
         User targetUser = findByUsername(privateChatDTO.getUsername());
         chats.remove(targetUser.getUserId());
         userRepository.update(user);

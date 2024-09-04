@@ -22,5 +22,6 @@ public class User {
     private String email;
     private String hashedPassword;
     private List<ObjectId> groupChats;
-    private List<ObjectId> chats;
+    private List<ObjectId> privateChats;
+    private List<ObjectId> botChats;
 }
