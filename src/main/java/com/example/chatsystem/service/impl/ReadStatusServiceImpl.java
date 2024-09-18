@@ -19,7 +19,8 @@ public class ReadStatusServiceImpl implements ReadStatusService {
     }
 
     @Override
-    public List<ReadStatus> createMessage(String collectionName, Message message, List<ObjectId> userIds){
+    public List<ReadStatus> createReadStatus(String collectionName, Message message, List<ObjectId> userIds){
+        collectionName = "status_" + collectionName;
         List<ReadStatus> readStatusList = new ArrayList<>();
         for (ObjectId userId : userIds) {
             ReadStatus readStatus = ReadStatus.builder()
@@ -33,11 +34,13 @@ public class ReadStatusServiceImpl implements ReadStatusService {
 
     @Override
     public ReadStatus getReadStatus(String collectionName, Message message, ObjectId userId){
+        collectionName = "status_" + collectionName;
         return readStatusRepository.findById(message.getId() + userId.toHexString(), collectionName);
     }
 
     @Override
     public ReadStatus setIsRead(String collectionName, Message message, ObjectId userId, boolean isRead){
+        collectionName = "status_" + collectionName;
         ReadStatus readStatus = ReadStatus.builder()
                 .id(message.getId() + userId.toHexString())
                 .isRead(isRead)

@@ -7,7 +7,7 @@ import org.bson.types.ObjectId;
 import java.util.List;
 
 public interface ReadStatusService {
-    List<ReadStatus> createMessage(String collectionName, Message message, List<ObjectId> userIds);
+    List<ReadStatus> createReadStatus(String collectionName, Message message, List<ObjectId> userIds);
 
     ReadStatus getReadStatus(String collectionName, Message message, ObjectId userId);
 
