@@ -1,13 +1,11 @@
 package com.example.chatsystem.service;
 
 import com.example.chatsystem.config.websocket.aws.S3File;
-import com.example.chatsystem.dto.ImageRequestDTO;
-import com.example.chatsystem.dto.MessageDTO;
-import com.example.chatsystem.dto.MessageReceiveDTO;
-import com.example.chatsystem.dto.MessageSendDTO;
+import com.example.chatsystem.dto.*;
 import com.example.chatsystem.model.ChatType;
 import com.example.chatsystem.model.GroupChat;
 import com.example.chatsystem.model.Message;
+import com.example.chatsystem.model.MessageType;
 import com.example.chatsystem.security.MyUserDetails;
 import org.bson.types.ObjectId;
 
@@ -34,9 +32,15 @@ public interface MessageService{
 
     void persistGroupMessage(MessageSendDTO messageSendDTO, MessageReceiveDTO messageReceiveDTO);
 
-    void persistImage(InputStream inputStream, String imageType, ObjectId senderId, ObjectId receiverId, ChatType chatType);
+
+    void persistGroupFile(InputStream inputStream, MessageType messageType, ObjectId senderId, ObjectId groupId);
+
+    void persistFile(InputStream inputStream, MessageType messageType, ObjectId senderId, ObjectId receiverId,
+                      ChatType chatType);
 
     boolean collectionExists(String collectionName);
+
+    MessagesDTO getAllMessages(MyUserDetails userDetails);
 
     List<MessageDTO> getPrivateChatMessages(MyUserDetails userDetails, String targetUserName);
 
@@ -47,5 +51,6 @@ public interface MessageService{
 
     MessageReceiveDTO buildMessageReceiveDTO(MessageSendDTO messageSendDTO, String senderName);
 
-    S3File findImageById(MyUserDetails userDetails, ImageRequestDTO imageRequestDTO, String imageId);
+    S3File findFileById(MyUserDetails userDetails, String chatName,
+                         String senderName, ChatType chatType, String fileId);
 }

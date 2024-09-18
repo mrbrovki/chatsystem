@@ -1,18 +1,19 @@
 package com.example.chatsystem.controller;
 
 import com.example.chatsystem.config.websocket.aws.S3File;
-import com.example.chatsystem.dto.ImageRequestDTO;
 import com.example.chatsystem.dto.MessageDTO;
+import com.example.chatsystem.dto.MessagesDTO;
+import com.example.chatsystem.model.ChatType;
 import com.example.chatsystem.security.MyUserDetails;
 import com.example.chatsystem.service.ChatService;
 import com.example.chatsystem.service.MessageService;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -28,15 +29,19 @@ public class MessageController {
     }
 
     @GetMapping("/")
-    public ResponseEntity<List<MessageDTO>> getAllMessages(@AuthenticationPrincipal MyUserDetails user) {
-        List<MessageDTO> messageDTOS = new ArrayList<>();
-        return ResponseEntity.ok(messageDTOS);
+    public ResponseEntity<MessagesDTO> getAllMessages(@AuthenticationPrincipal MyUserDetails userDetails) {
+        System.out.println(userDetails.getUserId());
+        return ResponseEntity.ok(messageService.getAllMessages(userDetails));
     }
 
-    @PostMapping(value = "/images/{id}")
-    public ResponseEntity<byte[]> getImage(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable("id") String imageId, @RequestBody ImageRequestDTO imageRequestDTO) {
-        S3File file = messageService.findImageById(userDetails, imageRequestDTO, imageId);
-        return ResponseEntity.ok().contentType(file.getContentType()).body(file.getData());
+    @GetMapping(value = "/files/{id}")
+    public ResponseEntity<byte[]> getImage(@AuthenticationPrincipal MyUserDetails userDetails,
+                                           @PathVariable("id") String fileId,
+                                           @RequestParam String chatName,
+                                           @RequestParam String senderName,
+                                           @RequestParam String chatType) {
+        S3File file = messageService.findFileById(userDetails, chatName, senderName, ChatType.fromValue(chatType), fileId);
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType(file.getContentType().getValue())).body(file.getData());
     }
 
     @GetMapping("/users/{username}")

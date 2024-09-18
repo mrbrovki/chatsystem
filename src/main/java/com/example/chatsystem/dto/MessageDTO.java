@@ -15,4 +15,5 @@ public class MessageDTO {
     private String content;
     private String senderName;
     private MessageType type;
+    private boolean isRead;
 }
