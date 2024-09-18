@@ -1,7 +1,7 @@
 package com.example.chatsystem.controller;
 
-import com.example.chatsystem.bot.BotService;
 import com.example.chatsystem.dto.MessageSendDTO;
+import com.example.chatsystem.model.MessageType;
 import com.example.chatsystem.service.WebSocketService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -25,12 +25,12 @@ public class ChatWebSocketController {
         webSocketService.handleMessageToBot(messageSendDTO, senderName);
     }
 
-    @MessageMapping("/chat.sendImageToBot")
-    public void sendImageToBot(@Payload byte[] payload, SimpMessageHeaderAccessor headerAccessor) {
+    @MessageMapping("/chat.sendFileToBot")
+    public void sendFileToBot(@Payload byte[] payload, SimpMessageHeaderAccessor headerAccessor) {
         String senderName = headerAccessor.getUser().getName();
-        String imageType = headerAccessor.getNativeHeader("image-type").get(0);
+        String fileType = headerAccessor.getNativeHeader("file-type").get(0);
         String botName = headerAccessor.getNativeHeader("receiver-name").get(0);
-        webSocketService.handleImageToBot(payload, imageType, senderName, botName);
+        webSocketService.handleFileToBot(payload, MessageType.fromValue(fileType), senderName, botName);
     }
 
     @MessageMapping("/chat.sendToPrivate")
@@ -39,12 +39,12 @@ public class ChatWebSocketController {
         webSocketService.handlePrivateMessage(messageSendDTO, senderName);
     }
 
-    @MessageMapping("/chat.sendImageToPrivate")
-    public void sendImageToPrivate(@Payload byte[] payload, SimpMessageHeaderAccessor headerAccessor) {
+    @MessageMapping("/chat.sendFileToPrivate")
+    public void sendFileToPrivate(@Payload byte[] payload, SimpMessageHeaderAccessor headerAccessor) {
         String senderName = headerAccessor.getUser().getName();
-        String imageType = headerAccessor.getNativeHeader("image-type").get(0);
+        String fileType = headerAccessor.getNativeHeader("file-type").get(0);
         String receiverName = headerAccessor.getNativeHeader("receiver-name").get(0);
-        webSocketService.handleImageToPrivate(payload, imageType, senderName, receiverName);
+        webSocketService.handleFileToPrivate(payload, MessageType.fromValue(fileType), senderName, receiverName);
     }
 
     @MessageMapping("/chat.sendToGroup")
@@ -53,11 +53,11 @@ public class ChatWebSocketController {
         webSocketService.handleGroupMessage(messageSendDTO, senderName);
     }
 
-    @MessageMapping("/chat.sendImageToGroup")
-    public void sendImageToGroup(@Payload byte[] payload, SimpMessageHeaderAccessor headerAccessor) {
+    @MessageMapping("/chat.sendFileToGroup")
+    public void sendFileToGroup(@Payload byte[] payload, SimpMessageHeaderAccessor headerAccessor) {
         String senderName = headerAccessor.getUser().getName();
-        String imageType = headerAccessor.getNativeHeader("image-type").get(0);
+        String fileType = headerAccessor.getNativeHeader("file-type").get(0);
         String groupName = headerAccessor.getNativeHeader("receiver-name").get(0);
-        webSocketService.handleImageToGroup(payload, imageType, senderName, groupName);
+        webSocketService.handleFileToGroup(payload, MessageType.fromValue(fileType), senderName, groupName);
     }
 }

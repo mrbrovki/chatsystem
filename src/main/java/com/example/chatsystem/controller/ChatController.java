@@ -70,6 +70,11 @@ public class ChatController {
         return ResponseEntity.ok(chatsDTOs);
     }
 
+    @GetMapping("/private/{username}")
+    public ResponseEntity<PrivateChatResponseDTO> findPrivateChatByName(@PathVariable String username) {
+        return ResponseEntity.ok(chatService.findPrivateChatByName(username));
+    }
+
     @PutMapping("/private/add")
     public ResponseEntity<List<String>> addPrivateChat(@AuthenticationPrincipal MyUserDetails userDetails, @RequestBody AddPrivateChatDTO privateChatDTO) {
         List<String> chatUsernames = userService.addPrivateChatToUser(new ObjectId(userDetails.getUserId()), privateChatDTO);

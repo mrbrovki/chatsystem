@@ -12,7 +12,7 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 public class ChatResponseDTO {
-    private List<PrivateChatResponseDTO> privateChats;
-    private List<GroupChatResponseDTO> groupChats;
-    private List<BotChatResponseDTO> botChats;
+    private List<PrivateChatResponseDTO> PRIVATE;
+    private List<GroupChatResponseDTO> GROUP;
+    private List<BotChatResponseDTO> BOT;
 }

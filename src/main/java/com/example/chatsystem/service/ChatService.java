@@ -33,6 +33,8 @@ public interface ChatService {
 
     ArrayList<PrivateChatResponseDTO> findPrivateChats(ObjectId userId);
 
+    PrivateChatResponseDTO findPrivateChatByName(String username);
+
     ArrayList<GroupChatResponseDTO> findGroupChats(ObjectId userId);
 
     ArrayList<BotChatResponseDTO> findBotChats(ObjectId userId);

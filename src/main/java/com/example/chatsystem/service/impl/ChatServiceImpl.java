@@ -197,9 +197,9 @@ public class ChatServiceImpl implements ChatService {
         setUserBotChats(botChatDTOs, user);
 
         return ChatResponseDTO.builder()
-                .privateChats(privateChatDTOs)
-                .groupChats(groupChatDTOs)
-                .botChats(botChatDTOs)
+                .PRIVATE(privateChatDTOs)
+                .GROUP(groupChatDTOs)
+                .BOT(botChatDTOs)
                 .build();
     }
 
@@ -209,6 +209,16 @@ public class ChatServiceImpl implements ChatService {
         User user = userService.findById(userId);
         setUserPrivateChats(chatDTOs, user);
         return chatDTOs;
+    }
+
+    @Override
+    public PrivateChatResponseDTO findPrivateChatByName(String username) {
+        User targetUser = userService.findByUsername(username);
+        return PrivateChatResponseDTO.builder()
+                .username(targetUser.getUsername())
+                .avatar(avatarsUrl + targetUser.getUsername())
+                .type(ChatType.PRIVATE)
+                .build();
     }
 
     @Override
@@ -279,29 +289,8 @@ public class ChatServiceImpl implements ChatService {
             chatDTOs.add(BotChatResponseDTO.builder()
                             .botName(bot.getName())
                             .type(ChatType.BOT)
+                            .avatar(avatarsUrl + bot.getName())
                     .build());
         }
-    }
-
-    public static String buildCollectionName(ObjectId senderId, ObjectId receiverId, ChatType chatType){
-        String collectionName = chatType.name() + "_";
-        if(receiverId == null){
-            return collectionName + senderId.toHexString();
-        }
-        if(senderId.getTimestamp() < receiverId.getTimestamp()){
-            collectionName += senderId + "&" + receiverId;
-        }else if(senderId.getTimestamp() > receiverId.getTimestamp()){
-            collectionName += receiverId + "&" + senderId;
-        }else{
-            int result = senderId.compareTo(receiverId);
-            if(result < 0){
-                collectionName += senderId + "&" + receiverId;
-            }else if(result > 0){
-                collectionName += receiverId + "&" + senderId;
-            }else{
-                collectionName += senderId;
-            }
-        }
-        return collectionName;
     }
 }
