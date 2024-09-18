@@ -1,10 +1,10 @@
 package com.example.chatsystem.config.websocket.aws;
 
+import com.example.chatsystem.model.MessageType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.http.MediaType;
 
 @Data
 @AllArgsConstructor
@@ -12,5 +12,5 @@ import org.springframework.http.MediaType;
 @Builder
 public class S3File {
     private byte[] data;
-    private MediaType contentType;
+    private MessageType contentType;
 }

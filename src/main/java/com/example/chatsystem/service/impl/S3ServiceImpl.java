@@ -3,9 +3,9 @@ package com.example.chatsystem.service.impl;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.*;
 import com.example.chatsystem.config.websocket.aws.S3File;
+import com.example.chatsystem.model.MessageType;
 import com.example.chatsystem.service.S3Service;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -40,18 +40,18 @@ public class S3ServiceImpl implements S3Service {
     }
 
     @Override
-    public PutObjectResult uploadChatImage(InputStream inputStream, String imageType, String key){
+    public PutObjectResult uploadChatFile(InputStream inputStream, MessageType messageType, String key){
         ObjectMetadata metadata = new ObjectMetadata();
-        metadata.setContentType(imageType);
+        metadata.setContentType(messageType.getValue());
         return putObject(chatsBucket, key, inputStream, metadata);
     }
 
     @Override
-    public S3File getChatImage(String key) {
+    public S3File getChatFile(String key) {
         S3File file = new S3File();
         GetObjectRequest getObjectRequest = new GetObjectRequest(chatsBucket, key);
         S3Object s3Object = amazonS3.getObject(getObjectRequest);
-        file.setContentType(MediaType.parseMediaType(s3Object.getObjectMetadata().getContentType()));
+        file.setContentType(MessageType.fromValue(s3Object.getObjectMetadata().getContentType()));
 
         try {
             file.setData(s3Object.getObjectContent().readAllBytes());
