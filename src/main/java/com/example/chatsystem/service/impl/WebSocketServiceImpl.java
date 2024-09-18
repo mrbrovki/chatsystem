@@ -39,12 +39,17 @@ public class WebSocketServiceImpl implements WebSocketService {
 
     @Override
     public void sendPrivateMessage(String receiverName, MessageReceiveDTO message) {
-        messagingTemplate.convertAndSendToUser(receiverName, "/queue/messages", message);
-
+        messagingTemplate.convertAndSendToUser(receiverName, "/private/messages", message);
     }
+
+    @Override
+    public void sendBotMessage(String receiverName, MessageReceiveDTO message) {
+        messagingTemplate.convertAndSendToUser(receiverName, "/bot/messages", message);
+    }
+
     @Override
     public void sendGroupMessage(String groupId, MessageReceiveDTO message) {
-        messagingTemplate.convertAndSend("/group/" + groupId + "/queue/messages", message);
+        messagingTemplate.convertAndSend("/group/" + groupId + "/messages", message);
     }
 
     @Override
@@ -67,7 +72,7 @@ public class WebSocketServiceImpl implements WebSocketService {
         MessageReceiveDTO botMessageReceiveDTO = messageService.buildMessageReceiveDTO(botSendDTO, botName);
         messageService.persistBotMessage(botMessageReceiveDTO, botId, userId);
 
-        sendPrivateMessage(botSendDTO.getReceiverName(), botMessageReceiveDTO);
+        sendBotMessage(botSendDTO.getReceiverName(), botMessageReceiveDTO);
     }
 
     @Override
@@ -89,39 +94,39 @@ public class WebSocketServiceImpl implements WebSocketService {
     }
 
     @Override
-    public void handleImageToBot(byte[] payload, String imageType, String senderName, String botName){
+    public void handleFileToBot(byte[] payload, MessageType messageType, String senderName, String botName){
         ObjectId senderId = userService.findByUsername(senderName).getUserId();
         ObjectId receiverId = botService.getBotByName(botName).getId();
 
-        messageService.persistImage(new ByteArrayInputStream(payload), imageType, senderId, receiverId, ChatType.BOT);
+        messageService.persistFile(new ByteArrayInputStream(payload), messageType, senderId, receiverId, ChatType.BOT);
         Map<String, Object> headers = new HashMap<>();
-        headers.put("contentType", imageType);
+        headers.put("contentType", messageType.getValue());
 
-        messagingTemplate.convertAndSendToUser(senderName, "/queue/messages", payload, headers);
+        messagingTemplate.convertAndSendToUser(senderName, "/private/messages", payload, headers);
     }
 
     @Override
-    public void handleImageToPrivate(byte[] payload, String imageType, String senderName, String receiverName) {
+    public void handleFileToPrivate(byte[] payload, MessageType messageType, String senderName, String receiverName) {
         ObjectId senderId = userService.findByUsername(senderName).getUserId();
         ObjectId receiverId = userService.findByUsername(receiverName).getUserId();
 
-        messageService.persistImage(new ByteArrayInputStream(payload), imageType, senderId, receiverId, ChatType.PRIVATE);
+        messageService.persistFile(new ByteArrayInputStream(payload), messageType, senderId, receiverId, ChatType.PRIVATE);
 
         Map<String, Object> headers = new HashMap<>();
-        headers.put("contentType", imageType);
-
-        messagingTemplate.convertAndSendToUser(receiverName, "/queue/messages", payload, headers);
+        headers.put("contentType", messageType.getValue());
+        headers.put("sender", senderName);
+        messagingTemplate.convertAndSendToUser(receiverName, "/private/messages", payload, headers);
     }
 
     @Override
-    public void handleImageToGroup(byte[] payload, String imageType, String senderName, String groupId) {
+    public void handleFileToGroup(byte[] payload, MessageType messageType, String senderName, String groupId) {
         ObjectId senderId = userService.findByUsername(senderName).getUserId();
 
-        messageService.persistImage(new ByteArrayInputStream(payload), imageType, senderId, new ObjectId(groupId), ChatType.GROUP);
+        messageService.persistGroupFile(new ByteArrayInputStream(payload), messageType, senderId, new ObjectId(groupId));
         Map<String, Object> headers = new HashMap<>();
-        headers.put("contentType", imageType);
+        headers.put("contentType", messageType.getValue());
 
-        messagingTemplate.convertAndSend("/group/" + groupId + "/queue/messages", payload ,headers);
+        messagingTemplate.convertAndSend("/group/" + groupId + "/messages", payload ,headers);
     }
 
     @Override

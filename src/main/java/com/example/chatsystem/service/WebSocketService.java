@@ -2,11 +2,14 @@ package com.example.chatsystem.service;
 
 import com.example.chatsystem.dto.MessageReceiveDTO;
 import com.example.chatsystem.dto.MessageSendDTO;
+import com.example.chatsystem.model.MessageType;
 import org.bson.types.ObjectId;
 
 public interface WebSocketService {
 
     void sendPrivateMessage(String receiverName, MessageReceiveDTO message);
+
+    void sendBotMessage(String receiverName, MessageReceiveDTO message);
 
     void sendGroupMessage(String groupId, MessageReceiveDTO message);
 
@@ -16,9 +19,9 @@ public interface WebSocketService {
 
     void handleGroupMessage(MessageSendDTO messageSendDTO, String senderName);
 
-    void handleImageToBot(byte[] payload, String imageType, String senderName, String receiverName);
-    void handleImageToPrivate(byte[] payload, String imageType, String senderName, String receiverName);
-    void handleImageToGroup(byte[] payload, String imageType, String senderName, String receiverName);
+    void handleFileToBot(byte[] payload, MessageType messageType, String senderName, String receiverName);
+    void handleFileToPrivate(byte[] payload, MessageType messageType, String senderName, String receiverName);
+    void handleFileToGroup(byte[] payload, MessageType messageType, String senderName, String receiverName);
 
     void subscribeUserToGroup(String username, ObjectId groupId);
 
