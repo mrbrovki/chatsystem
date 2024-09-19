@@ -155,8 +155,8 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public void persistFile(InputStream inputStream, MessageType messageType, ObjectId senderId, ObjectId receiverId,
-                             ChatType chatType){
+    public void persistBotFile(InputStream inputStream, MessageType messageType, ObjectId senderId, ObjectId receiverId,
+                               ChatType chatType){
         String collectionName = buildCollectionName(senderId, receiverId, chatType);
         long timestamp = Instant.now().toEpochMilli();
         String fileId = senderId.toHexString()+timestamp;
@@ -169,13 +169,40 @@ public class MessageServiceImpl implements MessageService {
 
         readStatusService.createReadStatus(collectionName, message, List.of(senderId, receiverId));
     }
+    @Override
+    public void persistPrivateFile(InputStream inputStream, MessageType messageType, String senderName, String receiverName,
+                                   ChatType chatType){
+        User sender = userService.findByUsername(senderName);
+        User receiver = userService.findByUsername(receiverName);
+
+        String collectionName = buildCollectionName(sender.getUserId(), receiver.getUserId(), chatType);
+        long timestamp = Instant.now().toEpochMilli();
+        String fileId = sender.getUserId().toHexString()+timestamp;
+
+        if(!collectionExists(collectionName)) {
+            if (!sender.getPrivateChats().contains(receiver.getUserId())) {
+                userService.addPrivateChatToUser(sender, receiver.getUserId());
+            }
+            if (!receiver.getPrivateChats().contains(sender.getUserId())) {
+                userService.addPrivateChatToUser(receiver, sender.getUserId());
+            }
+        }
+
+        //upload to s3
+        String key = collectionName + "/" + fileId;
+        PutObjectResult result = s3Service.uploadChatFile(inputStream, messageType, key);
+
+        Message message = persistFileMessage(collectionName, sender.getUserId(), fileId, messageType, timestamp);
+
+        readStatusService.createReadStatus(collectionName, message, List.of(sender.getUserId(), receiver.getUserId()));
+    }
 
     private Message persistFileMessage(String collectionName, ObjectId senderId, String fileId,
                                        MessageType messageType, long timestamp){
         Message message = new Message();
         message.setId(fileId);
         message.setSenderId(senderId);
-        message.setContent("http://localhost:8080/api/v2/messages/files/" + timestamp);
+        message.setContent(String.valueOf(timestamp));
         message.setType(messageType);
         message.setTimestamp(timestamp);
         return saveMessage(collectionName, message);

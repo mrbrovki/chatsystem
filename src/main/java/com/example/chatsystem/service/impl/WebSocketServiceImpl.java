@@ -98,7 +98,7 @@ public class WebSocketServiceImpl implements WebSocketService {
         ObjectId senderId = userService.findByUsername(senderName).getUserId();
         ObjectId receiverId = botService.getBotByName(botName).getId();
 
-        messageService.persistFile(new ByteArrayInputStream(payload), messageType, senderId, receiverId, ChatType.BOT);
+        messageService.persistBotFile(new ByteArrayInputStream(payload), messageType, senderId, receiverId, ChatType.BOT);
         Map<String, Object> headers = new HashMap<>();
         headers.put("contentType", messageType.getValue());
 
@@ -107,10 +107,8 @@ public class WebSocketServiceImpl implements WebSocketService {
 
     @Override
     public void handleFileToPrivate(byte[] payload, MessageType messageType, String senderName, String receiverName) {
-        ObjectId senderId = userService.findByUsername(senderName).getUserId();
-        ObjectId receiverId = userService.findByUsername(receiverName).getUserId();
-
-        messageService.persistFile(new ByteArrayInputStream(payload), messageType, senderId, receiverId, ChatType.PRIVATE);
+        messageService.persistPrivateFile(new ByteArrayInputStream(payload),
+                messageType, senderName, receiverName, ChatType.PRIVATE);
 
         Map<String, Object> headers = new HashMap<>();
         headers.put("contentType", messageType.getValue());

@@ -57,7 +57,7 @@ public class UserController {
         return ResponseEntity.ok(userService.findAll());
     }
 
-    @PostMapping(value = "/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping(value = "/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<EditUserDTO> updateUser(@AuthenticationPrincipal MyUserDetails userDetails, @RequestPart("json") String json, @RequestPart("avatar") MultipartFile avatar) {
 
         EditUserDTO editRequest;

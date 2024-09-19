@@ -28,7 +28,7 @@ public class MessageController {
         this.chatService = chatService;
     }
 
-    @GetMapping("/")
+    @GetMapping
     public ResponseEntity<MessagesDTO> getAllMessages(@AuthenticationPrincipal MyUserDetails userDetails) {
         System.out.println(userDetails.getUserId());
         return ResponseEntity.ok(messageService.getAllMessages(userDetails));

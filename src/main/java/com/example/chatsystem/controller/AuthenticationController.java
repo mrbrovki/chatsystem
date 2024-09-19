@@ -50,7 +50,7 @@ public class AuthenticationController {
         }
     }
 
-    @GetMapping("/authenticate")
+    @PostMapping("/authenticate")
     public JwtResponseDTO authenticate(@AuthenticationPrincipal MyUserDetails userDetails) {
         return JwtResponseDTO.builder()
                 .accessToken(jwtService.GenerateToken(userDetails.getUsername(), userDetails.getUserId()))

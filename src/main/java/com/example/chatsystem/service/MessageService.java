@@ -35,8 +35,12 @@ public interface MessageService{
 
     void persistGroupFile(InputStream inputStream, MessageType messageType, ObjectId senderId, ObjectId groupId);
 
-    void persistFile(InputStream inputStream, MessageType messageType, ObjectId senderId, ObjectId receiverId,
-                      ChatType chatType);
+
+    void persistBotFile(InputStream inputStream, MessageType messageType, ObjectId senderId, ObjectId receiverId,
+                        ChatType chatType);
+
+    void persistPrivateFile(InputStream inputStream, MessageType messageType, String senderName, String receiverName,
+                            ChatType chatType);
 
     boolean collectionExists(String collectionName);
 
