@@ -1,13 +1,13 @@
 package com.example.chatsystem.repository;
 
 import com.example.chatsystem.model.ReadStatus;
+import org.bson.types.ObjectId;
 
-import java.util.List;
+import java.util.Optional;
 
 public interface ReadStatusRepository {
-    List<ReadStatus> saveAll(List<ReadStatus> readStatusList, String collectionName);
 
     ReadStatus save(ReadStatus readStatus, String collectionName);
 
-    ReadStatus findById(String id, String collectionName);
+    Optional<ReadStatus> findById(ObjectId userId, String collectionName);
 }

@@ -13,5 +13,6 @@ import lombok.NoArgsConstructor;
 public class PrivateChatResponseDTO {
     private String username;
     private String avatar;
+    private long lastReadTime;
     private ChatType type;
 }

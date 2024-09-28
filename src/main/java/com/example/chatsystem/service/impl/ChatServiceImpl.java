@@ -6,11 +6,9 @@ import com.example.chatsystem.dto.chat.*;
 import com.example.chatsystem.exception.DocumentNotFoundException;
 import com.example.chatsystem.model.ChatType;
 import com.example.chatsystem.model.GroupChat;
+import com.example.chatsystem.model.ReadStatus;
 import com.example.chatsystem.model.User;
-import com.example.chatsystem.service.ChatService;
-import com.example.chatsystem.service.GroupChatService;
-import com.example.chatsystem.service.UserService;
-import com.example.chatsystem.service.WebSocketService;
+import com.example.chatsystem.service.*;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,22 +18,26 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.example.chatsystem.utils.CollectionUtils.buildCollectionName;
+
 @Service
 public class ChatServiceImpl implements ChatService {
     private final GroupChatService groupChatService;
     private final UserService userService;
     private final WebSocketService webSocketService;
     private final BotService botService;
+    private final ReadStatusService readStatusService;
 
     @Value("${aws.avatars.url}")
     private String avatarsUrl;
 
     @Autowired
-    public ChatServiceImpl(GroupChatService groupChatService, UserService userService, WebSocketService webSocketService, BotService botService) {
+    public ChatServiceImpl(GroupChatService groupChatService, UserService userService, WebSocketService webSocketService, BotService botService, ReadStatusService readStatusService) {
         this.groupChatService = groupChatService;
         this.userService = userService;
         this.webSocketService = webSocketService;
         this.botService = botService;
+        this.readStatusService = readStatusService;
     }
 
     @Override
@@ -212,11 +214,14 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public PrivateChatResponseDTO findPrivateChatByName(String username) {
-        User targetUser = userService.findByUsername(username);
+    public PrivateChatResponseDTO findPrivateChatByName(ObjectId userId, String targetName) {
+        User targetUser = userService.findByUsername(targetName);
+        String collectionName = buildCollectionName(userId, targetUser.getUserId(), ChatType.PRIVATE);
+        ReadStatus readStatus = readStatusService.getReadStatus(collectionName, userId);
         return PrivateChatResponseDTO.builder()
                 .username(targetUser.getUsername())
                 .avatar(avatarsUrl + targetUser.getUsername())
+                .lastReadTime(readStatus.getLastReadTime())
                 .type(ChatType.PRIVATE)
                 .build();
     }
@@ -256,11 +261,15 @@ public class ChatServiceImpl implements ChatService {
         List<ObjectId> chatUserIds = user.getPrivateChats();
 
         for (ObjectId chatUserId : chatUserIds) {
+            String collectionName = buildCollectionName(user.getUserId(), chatUserId, ChatType.PRIVATE);
+            ReadStatus readStatus = readStatusService.getReadStatus(collectionName, user.getUserId());
+
             User receiver = userService.findById(chatUserId);
             chatDTOs.add(PrivateChatResponseDTO.builder()
                     .username(receiver.getUsername())
                     .avatar(avatarsUrl + receiver.getUsername())
                     .type(ChatType.PRIVATE)
+                    .lastReadTime(readStatus.getLastReadTime())
                     .build());
 
         }
@@ -269,6 +278,9 @@ public class ChatServiceImpl implements ChatService {
     private void setUserGroupChats(ArrayList<GroupChatResponseDTO> chatDTOs, User user) {
         List<ObjectId> groupChatIds = user.getGroupChats();
         for (ObjectId chatId : groupChatIds) {
+            String collectionName = buildCollectionName(chatId, null, ChatType.GROUP);
+            ReadStatus readStatus = readStatusService.getReadStatus(collectionName, user.getUserId());
+
             GroupChat groupChat = findById(chatId);
             User hostUser = userService.findById(groupChat.getHostId());
             chatDTOs.add(GroupChatResponseDTO.builder()
@@ -278,6 +290,7 @@ public class ChatServiceImpl implements ChatService {
                     .host(hostUser.getUsername())
                     .image(avatarsUrl + chatId.toHexString())
                     .type(ChatType.GROUP)
+                    .lastReadTime(readStatus.getLastReadTime())
                     .build());
         }
     }
@@ -285,11 +298,15 @@ public class ChatServiceImpl implements ChatService {
     private void setUserBotChats(ArrayList<BotChatResponseDTO> chatDTOs, User user) {
         List<ObjectId> botIds = user.getBotChats();
         for (ObjectId botId : botIds) {
+            String collectionName = buildCollectionName(user.getUserId(), botId, ChatType.BOT);
+            ReadStatus readStatus = readStatusService.getReadStatus(collectionName, user.getUserId());
+
             Bot bot = botService.getBotById(botId);
             chatDTOs.add(BotChatResponseDTO.builder()
                             .botName(bot.getName())
                             .type(ChatType.BOT)
                             .avatar(avatarsUrl + bot.getName())
+                            .lastReadTime(readStatus.getLastReadTime())
                     .build());
         }
     }

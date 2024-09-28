@@ -44,7 +44,7 @@ public class MessageController {
         return ResponseEntity.ok().contentType(MediaType.parseMediaType(file.getContentType().getValue())).body(file.getData());
     }
 
-    @GetMapping("/users/{username}")
+    @GetMapping("/private/{username}")
     public ResponseEntity<List<MessageDTO>> getPrivateMessages(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable String username){
         List<MessageDTO> messageDTOS = messageService.getPrivateChatMessages(userDetails, username);
         return ResponseEntity.ok(messageDTOS);
@@ -61,5 +61,23 @@ public class MessageController {
     public ResponseEntity<List<MessageDTO>> getGroupChatMessages(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable String groupId){
         List<MessageDTO> messageDTOS = messageService.getGroupChatMessages(userDetails, chatService.findById(new ObjectId(groupId)));
         return ResponseEntity.ok(messageDTOS);
+    }
+
+    @PutMapping("/private/{username}/status")
+    public ResponseEntity<String> updatePrivateReadStatus(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable String username){
+        messageService.updatePrivateReadStatus(new ObjectId(userDetails.getUserId()), username);
+        return ResponseEntity.ok("success");
+    }
+
+    @PutMapping("/groups/{id}/status")
+    public ResponseEntity<String> updateGroupReadStatus(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable String id){
+        messageService.updateGroupReadStatus(new ObjectId(userDetails.getUserId()), new ObjectId(id));
+        return ResponseEntity.ok("success");
+    }
+
+    @PutMapping("/bots/{botName}/status")
+    public ResponseEntity<String> updateBotReadStatus(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable String botName){
+        messageService.updateBotReadStatus(new ObjectId(userDetails.getUserId()), botName);
+        return ResponseEntity.ok("success");
     }
 }

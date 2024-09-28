@@ -13,4 +13,5 @@ public class BotChatResponseDTO {
     private String botName;
     private ChatType type;
     private String avatar;
+    private long lastReadTime;
 }

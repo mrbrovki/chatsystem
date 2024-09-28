@@ -1,10 +1,11 @@
 package com.example.chatsystem.repository;
 
 import com.example.chatsystem.model.ReadStatus;
+import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class ReadStatusRepositoryImpl implements ReadStatusRepository {
@@ -14,10 +15,6 @@ public class ReadStatusRepositoryImpl implements ReadStatusRepository {
     public ReadStatusRepositoryImpl(MongoTemplate mongoTemplate) {
         this.mongoTemplate = mongoTemplate;
     }
-    @Override
-    public List<ReadStatus> saveAll(List<ReadStatus> readStatusList, String collectionName) {
-        return mongoTemplate.insert(readStatusList, collectionName).stream().toList();
-    }
 
     @Override
     public ReadStatus save(ReadStatus readStatus, String collectionName) {
@@ -25,7 +22,7 @@ public class ReadStatusRepositoryImpl implements ReadStatusRepository {
     }
 
     @Override
-    public ReadStatus findById(String id, String collectionName) {
-        return mongoTemplate.findById(id, ReadStatus.class, collectionName);
+    public Optional<ReadStatus> findById(ObjectId id, String collectionName) {
+        return Optional.ofNullable(mongoTemplate.findById(id, ReadStatus.class, collectionName));
     }
 }

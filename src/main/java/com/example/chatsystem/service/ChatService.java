@@ -33,7 +33,7 @@ public interface ChatService {
 
     ArrayList<PrivateChatResponseDTO> findPrivateChats(ObjectId userId);
 
-    PrivateChatResponseDTO findPrivateChatByName(String username);
+    PrivateChatResponseDTO findPrivateChatByName(ObjectId userId, String username);
 
     ArrayList<GroupChatResponseDTO> findGroupChats(ObjectId userId);
 

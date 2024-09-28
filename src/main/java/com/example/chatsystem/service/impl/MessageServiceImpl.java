@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import static com.example.chatsystem.utils.CollectionUtils.buildCollectionName;
+
 @Service
 public class MessageServiceImpl implements MessageService {
     private final MessageRepository messageRepository;
@@ -97,7 +99,7 @@ public class MessageServiceImpl implements MessageService {
         message.setTimestamp(messageReceiveDTO.getTimestamp());
         saveMessage(collectionName, message);
 
-        readStatusService.createReadStatus(collectionName, message, List.of(sender.getUserId(), receiver.getUserId()));
+        readStatusService.updateReadStatus(collectionName, message, sender.getUserId());
     }
 
     @Override
@@ -111,8 +113,7 @@ public class MessageServiceImpl implements MessageService {
         message.setType(MessageType.TEXT);
         message.setTimestamp(messageReceiveDTO.getTimestamp());
         saveMessage(collectionName, message);
-
-        readStatusService.createReadStatus(collectionName, message, List.of(senderId, receiverId));
+        readStatusService.updateReadStatus(collectionName, message, senderId);
     }
 
     @Override
@@ -132,8 +133,7 @@ public class MessageServiceImpl implements MessageService {
         message.setType(messageReceiveDTO.getType());
         message.setTimestamp(messageReceiveDTO.getTimestamp());
         saveMessage(collectionName, message);
-
-        readStatusService.createReadStatus(collectionName, message, groupChat.getMemberIds());
+        readStatusService.updateReadStatus(collectionName, message, sender.getUserId());
     }
 
     @Override
@@ -150,8 +150,6 @@ public class MessageServiceImpl implements MessageService {
         PutObjectResult result = s3Service.uploadChatFile(inputStream, messageType, key);
 
         Message message = persistFileMessage(collectionName, senderId, fileId, messageType, timestamp);
-
-        readStatusService.createReadStatus(collectionName, message, groupChat.getMemberIds());
     }
 
     @Override
@@ -166,8 +164,6 @@ public class MessageServiceImpl implements MessageService {
         PutObjectResult result = s3Service.uploadChatFile(inputStream, messageType, key);
 
         Message message = persistFileMessage(collectionName, senderId, fileId, messageType, timestamp);
-
-        readStatusService.createReadStatus(collectionName, message, List.of(senderId, receiverId));
     }
     @Override
     public void persistPrivateFile(InputStream inputStream, MessageType messageType, String senderName, String receiverName,
@@ -193,8 +189,6 @@ public class MessageServiceImpl implements MessageService {
         PutObjectResult result = s3Service.uploadChatFile(inputStream, messageType, key);
 
         Message message = persistFileMessage(collectionName, sender.getUserId(), fileId, messageType, timestamp);
-
-        readStatusService.createReadStatus(collectionName, message, List.of(sender.getUserId(), receiver.getUserId()));
     }
 
     private Message persistFileMessage(String collectionName, ObjectId senderId, String fileId,
@@ -289,13 +283,10 @@ public class MessageServiceImpl implements MessageService {
         List<Message> messages = messageRepository.findAll(collectionName);
         List<MessageDTO> messageDTOS = new ArrayList<>();
         for (Message message : messages) {
-            ReadStatus readStatus = readStatusService.getReadStatus(collectionName, message,
-                    new ObjectId(userDetails.getUserId()));
             MessageDTO messageDTO = MessageDTO.builder()
                     .type(message.getType())
                     .content(message.getContent())
                     .timestamp(message.getTimestamp())
-                    .isRead(readStatus.isRead())
                     .build();
             if(message.getSenderId().toHexString().equals(userDetails.getUserId())){
                 messageDTO.setSenderName(userDetails.getUsername());
@@ -363,25 +354,23 @@ public class MessageServiceImpl implements MessageService {
         return s3Service.getChatFile(key);
     }
 
-    private String buildCollectionName(ObjectId id1, ObjectId id2, ChatType chatType){
-        String collectionName = chatType + "_";
-        if(id2 == null){
-            return collectionName + id1.toHexString();
-        }
-        if(id1.getTimestamp() < id2.getTimestamp()){
-            collectionName += id1 + "&" + id2;
-        }else if(id1.getTimestamp() > id2.getTimestamp()){
-            collectionName += id2 + "&" + id1;
-        }else{
-            int result = id1.compareTo(id2);
-            if(result < 0){
-                collectionName += id1 + "&" + id2;
-            }else if(result > 0){
-                collectionName += id2 + "&" + id1;
-            }else{
-                collectionName += id1;
-            }
-        }
-        return collectionName;
+    @Override
+    public void updatePrivateReadStatus(ObjectId userId, String chatName) {
+        User targetUser = userService.findByUsername(chatName);
+        String collectionName = buildCollectionName(userId, targetUser.getUserId(), ChatType.PRIVATE);
+        readStatusService.updateReadStatus(collectionName, null, userId);
+    }
+
+    @Override
+    public void updateGroupReadStatus(ObjectId userId, ObjectId groupChatId) {
+        String collectionName = buildCollectionName(groupChatId, null, ChatType.GROUP);
+        readStatusService.updateReadStatus(collectionName, null, userId);
+    }
+
+    @Override
+    public void updateBotReadStatus(ObjectId userId, String chatName) {
+        Bot bot = botService.getBotByName(chatName);
+        String collectionName = buildCollectionName(userId, bot.getId(), ChatType.BOT);
+        readStatusService.updateReadStatus(collectionName, null, userId);
     }
 }

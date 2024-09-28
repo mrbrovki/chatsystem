@@ -19,4 +19,5 @@ public class GroupChatResponseDTO {
     private String name;
     private String host;
     private String image;
+    private long lastReadTime;
 }

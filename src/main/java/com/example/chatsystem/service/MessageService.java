@@ -57,4 +57,10 @@ public interface MessageService{
 
     S3File findFileById(MyUserDetails userDetails, String chatName,
                          String senderName, ChatType chatType, String fileId);
+
+    void updatePrivateReadStatus(ObjectId userId, String chatName);
+
+    void updateGroupReadStatus(ObjectId userId, ObjectId groupChatId);
+
+    void updateBotReadStatus(ObjectId userId, String chatName);
 }
