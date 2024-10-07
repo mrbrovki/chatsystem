@@ -1,9 +1,10 @@
-package com.example.chatsystem.dto.chat;
+package com.example.chatsystem.dto.groupchat;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -11,8 +12,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class GroupChatCreateDTO {
+public class CreateGroupRequest {
     private List<String> memberNames;
     private String name;
-    private String avatar;
+    private MultipartFile image;
 }

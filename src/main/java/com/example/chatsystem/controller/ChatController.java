@@ -1,11 +1,10 @@
 package com.example.chatsystem.controller;
 
-import com.amazonaws.services.s3.model.PutObjectResult;
 import com.example.chatsystem.dto.chat.*;
+import com.example.chatsystem.dto.groupchat.CreateGroupRequest;
 import com.example.chatsystem.model.GroupChat;
 import com.example.chatsystem.security.MyUserDetails;
 import com.example.chatsystem.service.ChatService;
-import com.example.chatsystem.service.S3Service;
 import com.example.chatsystem.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bson.types.ObjectId;
@@ -26,13 +25,11 @@ import java.util.List;
 public class ChatController {
     private final ChatService chatService;
     private final UserService userService;
-    private final S3Service s3Service;
 
     @Autowired
-    public ChatController(ChatService chatService, UserService userService, S3Service s3Service) {
+    public ChatController(ChatService chatService, UserService userService) {
         this.chatService = chatService;
         this.userService = userService;
-        this.s3Service = s3Service;
     }
 
     @GetMapping
@@ -42,54 +39,49 @@ public class ChatController {
     }
 
     @PostMapping(value = "/groups", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<GroupChatResponseDTO> createGroupChat(@AuthenticationPrincipal MyUserDetails userDetails,
-                                                                @RequestPart("json") String json,
-                                                                @RequestPart("image") MultipartFile image) {
-        GroupChatCreateDTO groupChatCreateDTO;
+    public ResponseEntity<GroupChatResponse> createGroupChat(@AuthenticationPrincipal MyUserDetails userDetails,
+                                                             @RequestPart("json") String json,
+                                                             @RequestPart("image") MultipartFile image) {
+        CreateGroupRequest request;
         try {
             ObjectMapper objectMapper = new ObjectMapper();
-            groupChatCreateDTO = objectMapper.readValue(json,  GroupChatCreateDTO.class);
-
+            request = objectMapper.readValue(json,  CreateGroupRequest.class);
+            request.setImage(image);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
-        GroupChatResponseDTO createdGroupChat = chatService.createGroupChat(new ObjectId(userDetails.getUserId()), groupChatCreateDTO);
-        try {
-            PutObjectResult result = s3Service.uploadAvatar(image.getInputStream(), createdGroupChat.getId(), image.getContentType());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
+        GroupChatResponse createdGroupChat = chatService.createGroupChat(new ObjectId(userDetails.getUserId()), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdGroupChat);
     }
 
     @GetMapping("/private")
-    public ResponseEntity<List<PrivateChatResponseDTO>> findPrivateChats(@AuthenticationPrincipal MyUserDetails userDetails) {
-        ArrayList<PrivateChatResponseDTO> chatsDTOs = chatService.findPrivateChats(new ObjectId(userDetails.getUserId()));
+    public ResponseEntity<List<PrivateChatResponse>> findPrivateChats(@AuthenticationPrincipal MyUserDetails userDetails) {
+        ArrayList<PrivateChatResponse> chatsDTOs = chatService.findPrivateChats(new ObjectId(userDetails.getUserId()));
         return ResponseEntity.ok(chatsDTOs);
     }
 
     @GetMapping("/private/{username}")
-    public ResponseEntity<PrivateChatResponseDTO> findPrivateChatByName(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable String username) {
+    public ResponseEntity<PrivateChatResponse> findPrivateChatByName(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable String username) {
         return ResponseEntity.ok(chatService.findPrivateChatByName(new ObjectId(userDetails.getUserId()), username));
     }
 
     @PutMapping("/private/add")
-    public ResponseEntity<List<String>> addPrivateChat(@AuthenticationPrincipal MyUserDetails userDetails, @RequestBody AddPrivateChatDTO privateChatDTO) {
+    public ResponseEntity<List<String>> addPrivateChat(@AuthenticationPrincipal MyUserDetails userDetails,
+                                                       @RequestBody AddPrivateChatRequest privateChatDTO) {
         List<String> chatUsernames = userService.addPrivateChatToUser(new ObjectId(userDetails.getUserId()), privateChatDTO);
         return ResponseEntity.ok(chatUsernames);
     }
 
     @GetMapping("/groups")
-    public ResponseEntity<List<GroupChatResponseDTO>> findGroupChats(@AuthenticationPrincipal MyUserDetails userDetails) {
-        ArrayList<GroupChatResponseDTO> chatsDTOs = chatService.findGroupChats(new ObjectId(userDetails.getUserId()));
+    public ResponseEntity<List<GroupChatResponse>> findGroupChats(@AuthenticationPrincipal MyUserDetails userDetails) {
+        ArrayList<GroupChatResponse> chatsDTOs = chatService.findGroupChats(new ObjectId(userDetails.getUserId()));
         return ResponseEntity.ok(chatsDTOs);
     }
 
     @GetMapping("/groups/{id}")
-    public ResponseEntity<GroupChatResponseDTO> findGroupChat(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable("id") String groupId) {
-        GroupChatResponseDTO chatsDTO = chatService.findById(new ObjectId(userDetails.getUserId()), new ObjectId(groupId));
+    public ResponseEntity<GroupChatResponse> findGroupChat(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable("id") String groupId) {
+        GroupChatResponse chatsDTO = chatService.findById(new ObjectId(userDetails.getUserId()), new ObjectId(groupId));
         return ResponseEntity.ok(chatsDTO);
     }
 

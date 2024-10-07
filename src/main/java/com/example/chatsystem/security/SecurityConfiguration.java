@@ -47,6 +47,7 @@ public class SecurityConfiguration {
                         configurer
                                 .requestMatchers("/api/v3/auth/authenticate").authenticated()
                                 .requestMatchers("/api/v3/auth/**").permitAll()
+                                .requestMatchers("/api/v3/users/exists").permitAll()
                                 .requestMatchers("/api/**").authenticated()
                                 .requestMatchers("/ws/**").permitAll()
                                 .anyRequest().permitAll()

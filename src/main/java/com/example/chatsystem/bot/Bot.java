@@ -16,4 +16,5 @@ public class Bot {
     private ObjectId id;
     private String name;
     private String info;
+    private String avatar;
 }

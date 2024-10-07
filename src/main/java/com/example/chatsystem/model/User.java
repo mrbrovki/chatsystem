@@ -24,4 +24,5 @@ public class User {
     private List<ObjectId> groupChats;
     private List<ObjectId> privateChats;
     private List<ObjectId> botChats;
+    private String avatar;
 }

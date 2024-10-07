@@ -1,15 +1,14 @@
 package com.example.chatsystem.controller;
 
-import com.amazonaws.services.s3.model.PutObjectResult;
-import com.example.chatsystem.dto.EditUserDTO;
-import com.example.chatsystem.dto.chat.PrivateChatResponseDTO;
-import com.example.chatsystem.model.User;
+import com.example.chatsystem.dto.auth.JwtResponse;
+import com.example.chatsystem.dto.chat.PrivateChatResponse;
+import com.example.chatsystem.dto.user.EditRequest;
 import com.example.chatsystem.security.MyUserDetails;
-import com.example.chatsystem.service.S3Service;
 import com.example.chatsystem.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,63 +19,47 @@ import java.io.IOException;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v2/users")
+@RequestMapping("/api/v3/users")
 public class UserController {
     private final UserService userService;
-    private final S3Service s3Service;
-
 
     @Autowired
-    public UserController(UserService userService, S3Service s3Service) {
+    public UserController(UserService userService) {
         this.userService = userService;
-        this.s3Service = s3Service;
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable("id") ObjectId id){
-        User user = userService.findById(id);
-        if (user != null) {
-            return ResponseEntity.ok(user);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
+    @GetMapping("/exists")
+    public ResponseEntity<String> doesUserExist(@RequestParam String username) {
+        boolean exists = userService.doesUsernameExist(username);
 
-    @GetMapping("/username")
-    public ResponseEntity<User> getUserByUsername(@RequestParam("username") String username){
-        User user = userService.findByUsername(username);
-        if (user != null) {
-            return ResponseEntity.ok(user);
+        if (!exists) {
+            return ResponseEntity.ok("User with name '" + username + "' does not exist.");
         } else {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("User with name '" + username + "' already exists.");
         }
     }
 
     @GetMapping
-    public ResponseEntity<List<PrivateChatResponseDTO>> findAll(){
+    public ResponseEntity<List<PrivateChatResponse>> findAll(){
         return ResponseEntity.ok(userService.findAll());
     }
 
     @PutMapping(value = "/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<EditUserDTO> updateUser(@AuthenticationPrincipal MyUserDetails userDetails, @RequestPart("json") String json, @RequestPart("avatar") MultipartFile avatar) {
+    public ResponseEntity<JwtResponse> updateUser(@AuthenticationPrincipal MyUserDetails userDetails,
+                                                  @RequestPart("json") String json,
+                                                  @RequestPart("avatar") MultipartFile avatar) {
 
-        EditUserDTO editRequest;
+        EditRequest request;
         try {
             ObjectMapper objectMapper = new ObjectMapper();
-            editRequest = objectMapper.readValue(json,  EditUserDTO.class);
-
+            request = objectMapper.readValue(json, EditRequest.class);
+            request.setAvatar(avatar);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
-        EditUserDTO editUserDTO = userService.edit(new ObjectId(userDetails.getUserId()), editRequest);
-
-        try {
-            PutObjectResult result = s3Service.uploadAvatar(avatar.getInputStream(), editUserDTO.getUsername(), avatar.getContentType());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        return ResponseEntity.ok(editUserDTO);
+        JwtResponse response = userService.edit(new ObjectId(userDetails.getUserId()), request);
+        return ResponseEntity.ok(response);
     }
 }
