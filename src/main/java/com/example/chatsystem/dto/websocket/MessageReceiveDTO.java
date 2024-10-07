@@ -1,5 +1,4 @@
-package com.example.chatsystem.dto;
-
+package com.example.chatsystem.dto.websocket;
 
 import com.example.chatsystem.model.MessageType;
 import lombok.AllArgsConstructor;
@@ -11,8 +10,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class MessageSendDTO {
+public class MessageReceiveDTO {
+    private long timestamp;
     private String content;
-    private String receiverName;
+    private String senderName;
     private MessageType type;
 }

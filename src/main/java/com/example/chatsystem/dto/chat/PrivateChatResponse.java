@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class PrivateChatResponseDTO {
+public class PrivateChatResponse {
     private String username;
     private String avatar;
     private long lastReadTime;

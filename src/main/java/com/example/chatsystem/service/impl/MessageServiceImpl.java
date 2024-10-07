@@ -4,7 +4,10 @@ import com.amazonaws.services.s3.model.PutObjectResult;
 import com.example.chatsystem.bot.Bot;
 import com.example.chatsystem.bot.BotService;
 import com.example.chatsystem.config.websocket.aws.S3File;
-import com.example.chatsystem.dto.*;
+import com.example.chatsystem.dto.message.MessageDTO;
+import com.example.chatsystem.dto.websocket.MessageReceiveDTO;
+import com.example.chatsystem.dto.websocket.MessageSendDTO;
+import com.example.chatsystem.dto.message.MessagesResponse;
 import com.example.chatsystem.exception.DocumentNotFoundException;
 import com.example.chatsystem.model.*;
 import com.example.chatsystem.repository.MessageRepository;
@@ -208,7 +211,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public MessagesDTO getAllMessages(MyUserDetails userDetails){
+    public MessagesResponse getAllMessages(MyUserDetails userDetails){
         User user = userService.findById(new ObjectId(userDetails.getUserId()));
 
         List<ObjectId> privateChats = user.getPrivateChats();
@@ -235,7 +238,7 @@ public class MessageServiceImpl implements MessageService {
             groupChatsHM.put(groupChat.getId().toHexString(), getGroupChatMessages(userDetails, groupChat));
         }
 
-        return MessagesDTO.builder()
+        return MessagesResponse.builder()
                 .PRIVATE(privateChatsHM)
                 .BOT(botChatsHM)
                 .GROUP(groupChatsHM)

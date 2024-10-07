@@ -1,7 +1,9 @@
 package com.example.chatsystem.service.impl;
 
 import com.example.chatsystem.bot.BotService;
-import com.example.chatsystem.dto.*;
+import com.example.chatsystem.dto.message.MessageDTO;
+import com.example.chatsystem.dto.websocket.MessageReceiveDTO;
+import com.example.chatsystem.dto.websocket.MessageSendDTO;
 import com.example.chatsystem.model.ChatType;
 import com.example.chatsystem.model.MessageType;
 import com.example.chatsystem.security.MyUserDetails;

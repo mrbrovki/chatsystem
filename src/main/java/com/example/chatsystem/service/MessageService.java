@@ -1,7 +1,10 @@
 package com.example.chatsystem.service;
 
 import com.example.chatsystem.config.websocket.aws.S3File;
-import com.example.chatsystem.dto.*;
+import com.example.chatsystem.dto.message.MessageDTO;
+import com.example.chatsystem.dto.websocket.MessageReceiveDTO;
+import com.example.chatsystem.dto.websocket.MessageSendDTO;
+import com.example.chatsystem.dto.message.MessagesResponse;
 import com.example.chatsystem.model.ChatType;
 import com.example.chatsystem.model.GroupChat;
 import com.example.chatsystem.model.Message;
@@ -44,7 +47,7 @@ public interface MessageService{
 
     boolean collectionExists(String collectionName);
 
-    MessagesDTO getAllMessages(MyUserDetails userDetails);
+    MessagesResponse getAllMessages(MyUserDetails userDetails);
 
     List<MessageDTO> getPrivateChatMessages(MyUserDetails userDetails, String targetUserName);
 

@@ -1,4 +1,4 @@
-package com.example.chatsystem.dto;
+package com.example.chatsystem.dto.message;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,7 +12,7 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class MessagesDTO {
+public class MessagesResponse {
     private Map<String, List<MessageDTO>> PRIVATE;
     private Map<String, List<MessageDTO>> GROUP;
     private Map<String, List<MessageDTO>> BOT;

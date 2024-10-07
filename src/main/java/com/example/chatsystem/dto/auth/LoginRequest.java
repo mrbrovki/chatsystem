@@ -1,4 +1,4 @@
-package com.example.chatsystem.dto;
+package com.example.chatsystem.dto.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,8 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class JwtResponseDTO {
-    private String accessToken;
+public class LoginRequest {
     private String username;
-    private String avatar;
+    private String password;
 }

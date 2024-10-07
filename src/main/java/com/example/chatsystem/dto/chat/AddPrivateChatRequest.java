@@ -1,4 +1,4 @@
-package com.example.chatsystem.dto;
+package com.example.chatsystem.dto.chat;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class ImageRequestDTO {
-    private String chatName;
-    private String senderName;
+public class AddPrivateChatRequest {
+    public String username;
 }

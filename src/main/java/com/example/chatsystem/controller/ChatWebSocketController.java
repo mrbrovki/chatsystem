@@ -1,6 +1,6 @@
 package com.example.chatsystem.controller;
 
-import com.example.chatsystem.dto.MessageSendDTO;
+import com.example.chatsystem.dto.websocket.MessageSendDTO;
 import com.example.chatsystem.model.MessageType;
 import com.example.chatsystem.service.WebSocketService;
 import org.springframework.beans.factory.annotation.Autowired;

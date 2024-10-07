@@ -12,7 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class GroupChatResponseDTO {
+public class GroupChatResponse {
     private ChatType type;
     private String id;
     private List<String> members;

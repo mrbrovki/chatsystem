@@ -1,7 +1,7 @@
 package com.example.chatsystem.service;
 
-import com.example.chatsystem.dto.MessageReceiveDTO;
-import com.example.chatsystem.dto.MessageSendDTO;
+import com.example.chatsystem.dto.websocket.MessageReceiveDTO;
+import com.example.chatsystem.dto.websocket.MessageSendDTO;
 import com.example.chatsystem.model.MessageType;
 import org.bson.types.ObjectId;
 

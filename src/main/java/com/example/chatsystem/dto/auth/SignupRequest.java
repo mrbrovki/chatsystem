@@ -1,17 +1,16 @@
-package com.example.chatsystem.dto;
+package com.example.chatsystem.dto.auth;
 
-import com.example.chatsystem.bot.Choice;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class BotResponseDTO {
-    private List<Choice> choices;
+public class SignupRequest {
+    private String username;
+    private String email;
+    private String password;
 }

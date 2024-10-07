@@ -1,4 +1,4 @@
-package com.example.chatsystem.dto;
+package com.example.chatsystem.dto.bot;
 
 import com.example.chatsystem.bot.Message;
 import lombok.AllArgsConstructor;
@@ -12,7 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class BotRequestDTO {
+public class BotRequest {
     private String model;
     private List<Message> messages;
     private int n;

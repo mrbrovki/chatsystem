@@ -1,6 +1,9 @@
 package com.example.chatsystem.bot;
 
-import com.example.chatsystem.dto.*;
+import com.example.chatsystem.dto.bot.BotRequest;
+import com.example.chatsystem.dto.bot.BotResponse;
+import com.example.chatsystem.dto.message.MessageDTO;
+import com.example.chatsystem.dto.websocket.MessageSendDTO;
 import com.example.chatsystem.exception.DocumentNotFoundException;
 import com.example.chatsystem.model.MessageType;
 import com.example.chatsystem.repository.BotRepository;
@@ -50,17 +53,17 @@ public class BotService {
     }
 
 
-    public BotResponseDTO prompt(BotRequestDTO botRequestDTO) {
+    public BotResponse prompt(BotRequest botRequest) {
         WebClient client = WebClient.create(openaiApiServer);
-        Mono<BotResponseDTO> responseDTOMono = client.post()
+        Mono<BotResponse> responseDTOMono = client.post()
                 .uri(openaiApiEndpoint)
                 .headers(httpHeaders -> {
                     httpHeaders.setContentType(MediaType.APPLICATION_JSON);
                     httpHeaders.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
                     httpHeaders.setBearerAuth(openaiApiKey);
-                }).bodyValue(botRequestDTO)
+                }).bodyValue(botRequest)
                 .retrieve()
-                .bodyToMono(BotResponseDTO.class);
+                .bodyToMono(BotResponse.class);
         return responseDTOMono.block();
     }
 
@@ -84,13 +87,13 @@ public class BotService {
             messages.add(message);
         });
 
-        BotRequestDTO botRequestDTO = BotRequestDTO.builder()
+        BotRequest botRequest = BotRequest.builder()
                 .model(model)
                 .messages(messages)
                 .build();
-        BotResponseDTO botResponseDTO = prompt(botRequestDTO);
+        BotResponse botResponse = prompt(botRequest);
 
-        Choice choice = botResponseDTO.getChoices().getFirst();
+        Choice choice = botResponse.getChoices().getFirst();
         String messageContent = choice.getMessage().getContent();
 
         return MessageSendDTO.builder()

@@ -1,8 +1,8 @@
 package com.example.chatsystem.controller;
 
 import com.example.chatsystem.config.websocket.aws.S3File;
-import com.example.chatsystem.dto.MessageDTO;
-import com.example.chatsystem.dto.MessagesDTO;
+import com.example.chatsystem.dto.message.MessageDTO;
+import com.example.chatsystem.dto.message.MessagesResponse;
 import com.example.chatsystem.model.ChatType;
 import com.example.chatsystem.security.MyUserDetails;
 import com.example.chatsystem.service.ChatService;
@@ -29,7 +29,7 @@ public class MessageController {
     }
 
     @GetMapping
-    public ResponseEntity<MessagesDTO> getAllMessages(@AuthenticationPrincipal MyUserDetails userDetails) {
+    public ResponseEntity<MessagesResponse> getAllMessages(@AuthenticationPrincipal MyUserDetails userDetails) {
         System.out.println(userDetails.getUserId());
         return ResponseEntity.ok(messageService.getAllMessages(userDetails));
     }
