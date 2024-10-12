@@ -137,4 +137,10 @@ public class ChatController {
         chatService.removeUserFromGroup(new ObjectId(userDetails.getUserId()), new ObjectId(chatId));
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/bots")
+    public ResponseEntity<List<BotChatResponse>> findBots(@AuthenticationPrincipal MyUserDetails userDetails) {
+        ArrayList<BotChatResponse> bots = chatService.findBotChats(new ObjectId(userDetails.getUserId()));
+        return ResponseEntity.ok(bots);
+    }
 }

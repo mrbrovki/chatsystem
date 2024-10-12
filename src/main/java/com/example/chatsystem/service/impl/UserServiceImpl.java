@@ -1,8 +1,8 @@
 package com.example.chatsystem.service.impl;
 
 import com.amazonaws.services.s3.model.PutObjectResult;
+import com.example.chatsystem.dto.auth.AuthRequest;
 import com.example.chatsystem.dto.auth.JwtResponse;
-import com.example.chatsystem.dto.auth.LoginRequest;
 import com.example.chatsystem.dto.auth.SignupRequest;
 import com.example.chatsystem.dto.auth.SignupResponse;
 import com.example.chatsystem.dto.chat.AddPrivateChatRequest;
@@ -79,12 +79,12 @@ public class UserServiceImpl implements UserService {
 
         userRepository.save(user);
 
-        LoginRequest loginRequest = LoginRequest.builder()
+        AuthRequest authRequest = AuthRequest.builder()
                 .username(user.getUsername())
                 .password(editRequest.getPassword())
                 .build();
 
-        return authService.login(loginRequest);
+        return authService.authenticate(authRequest);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.example.chatsystem.security;
 
+import com.example.chatsystem.dto.auth.JwtResponse;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -29,6 +30,15 @@ public class JwtService {
         return extractClaim(token, Claims::getExpiration);
     }
 
+    private Boolean isTokenExpired(String token) {
+        return extractExpiration(token).before(new Date());
+    }
+
+    public Boolean validateToken(String token, UserDetails userDetails) {
+        final String username = extractUsername(token);
+        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+    }
+
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
@@ -48,32 +58,23 @@ public class JwtService {
                 .getBody();
     }
 
-    private Boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
-    }
-
-    public Boolean validateToken(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
-    }
-
-
-
-    public String GenerateToken(String username, String userId){
+    public JwtResponse generateToken(MyUserDetails userDetails){
         Map<String, Object> claims = new HashMap<>();
-        claims.put("userId", userId);
-        return createToken(claims, username);
+        claims.put("userId", userDetails.getUserId());
+        return JwtResponse.builder()
+                .accessToken(createToken(claims, userDetails.getUsername()))
+                .username(userDetails.getUsername())
+                .avatar(userDetails.getAvatar())
+                .build();
     }
-
 
 
     private String createToken(Map<String, Object> claims, String username) {
-
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(username)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis()+ 1000 * 3600))
+                .setExpiration(new Date(System.currentTimeMillis()+ 1000 * 3600 * 24 * 7))
                 .signWith(getSignKey(), SignatureAlgorithm.HS256).compact();
     }
 

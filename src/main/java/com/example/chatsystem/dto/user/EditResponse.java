@@ -7,7 +7,6 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 public class EditResponse {
-    private String accessToken;
     private String username;
     private String avatar;
 }

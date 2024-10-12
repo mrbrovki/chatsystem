@@ -1,4 +1,4 @@
-package com.example.chatsystem.config.websocket;
+package com.example.chatsystem.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;

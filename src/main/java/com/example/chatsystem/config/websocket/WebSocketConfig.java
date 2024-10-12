@@ -17,10 +17,13 @@ import org.springframework.web.socket.server.standard.ServletServerContainerFact
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private JwtInterceptor jwtInterceptor;
+    private SubscriptionInterceptor subscriptionInterceptor;
     private CorsConfiguration corsConfiguration;
 
     @Autowired
-    public void setJwtInterceptor(JwtInterceptor jwtInterceptor, CorsConfiguration corsConfiguration) {
+    public void setJwtInterceptor(JwtInterceptor jwtInterceptor, SubscriptionInterceptor subscriptionInterceptor,
+                                  CorsConfiguration corsConfiguration) {
+        this.subscriptionInterceptor = subscriptionInterceptor;
         this.jwtInterceptor = jwtInterceptor;
         this.corsConfiguration = corsConfiguration;
     }
@@ -28,7 +31,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         System.out.println(corsConfiguration.getAllowedOrigins());
-        registry.addEndpoint("/ws").setAllowedOrigins("http://localhost:5173");
+        registry.addEndpoint("/ws")
+                .setAllowedOrigins("http://localhost:5173")
+                .addInterceptors(jwtInterceptor);
     }
 
     @Override
@@ -40,7 +45,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
-        registration.interceptors(jwtInterceptor);
+        registration.interceptors(subscriptionInterceptor);
     }
 
     @Bean

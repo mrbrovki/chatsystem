@@ -1,12 +1,11 @@
 package com.example.chatsystem.controller;
 
-import com.example.chatsystem.dto.auth.LoginRequest;
-import com.example.chatsystem.dto.auth.SignupRequest;
-import com.example.chatsystem.dto.auth.JwtResponse;
-import com.example.chatsystem.dto.auth.SignupResponse;
+import com.example.chatsystem.dto.auth.*;
 import com.example.chatsystem.security.AuthService;
 import com.example.chatsystem.security.MyUserDetails;
 import com.example.chatsystem.service.UserService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,14 +24,46 @@ public class AuthenticationController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<JwtResponse> login(@RequestBody LoginRequest loginRequest){
-        JwtResponse responseDTO = authService.login(loginRequest);
-        return ResponseEntity.ok(responseDTO);
+    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest authRequest, HttpServletResponse response){
+        JwtResponse jwtResponse = authService.authenticate(authRequest);
+
+        Cookie cookie = new Cookie("jwt", jwtResponse.getAccessToken());
+        cookie.setPath("/");
+        cookie.setMaxAge(3600 * 24 * 7);
+        cookie.setDomain("localhost");
+        cookie.setSecure(false);
+        cookie.setHttpOnly(true);
+        response.addCookie(cookie);
+
+        AuthResponse loginResponse = AuthResponse.builder()
+                .username(jwtResponse.getUsername())
+                .avatar(jwtResponse.getAvatar())
+                .build();
+
+        return ResponseEntity.ok(loginResponse);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(HttpServletResponse response){
+
+        Cookie cookie = new Cookie("jwt", "");
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+        cookie.setDomain("localhost");
+        cookie.setSecure(false);
+        cookie.setHttpOnly(true);
+        response.addCookie(cookie);
+
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/authenticate")
-    public ResponseEntity<JwtResponse> authenticate(@AuthenticationPrincipal MyUserDetails userDetails) {
-        return ResponseEntity.ok(authService.authenticate(userDetails));
+    public ResponseEntity<AuthResponse> authenticate(@AuthenticationPrincipal MyUserDetails userDetails) {
+        AuthResponse authResponse = AuthResponse.builder()
+                .username(userDetails.getUsername())
+                .avatar(userDetails.getAvatar())
+                .build();
+        return ResponseEntity.ok(authResponse);
     }
 
     @PostMapping("/signup")

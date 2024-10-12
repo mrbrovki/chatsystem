@@ -1,7 +1,7 @@
 package com.example.chatsystem.security;
 
+import com.example.chatsystem.dto.auth.AuthRequest;
 import com.example.chatsystem.dto.auth.JwtResponse;
-import com.example.chatsystem.dto.auth.LoginRequest;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -9,7 +9,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
-public class AuthService {
+public class  AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
 
@@ -18,26 +18,14 @@ public class AuthService {
         this.jwtService = jwtService;
     }
 
-    public JwtResponse login(LoginRequest loginRequest) {
+    public JwtResponse authenticate(AuthRequest authRequest) {
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
+                new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword()));
         MyUserDetails userDetails = (MyUserDetails) authentication.getPrincipal();
         if(authentication.isAuthenticated()){
-            return JwtResponse.builder()
-                    .accessToken(jwtService.GenerateToken(loginRequest.getUsername(), userDetails.getUserId()))
-                    .username(userDetails.getUsername())
-                    .avatar(userDetails.getAvatar())
-                    .build();
+            return jwtService.generateToken(userDetails);
         } else {
             throw new UsernameNotFoundException("invalid user request..!!");
         }
-    }
-
-    public JwtResponse authenticate(MyUserDetails userDetails) {
-        return JwtResponse.builder()
-                .accessToken(jwtService.GenerateToken(userDetails.getUsername(), userDetails.getUserId()))
-                .username(userDetails.getUsername())
-                .avatar(userDetails.getAvatar())
-                .build();
     }
 }
