@@ -18,7 +18,20 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-
+    env:
+      SPRING_DATA_MONGODB_URI: ${{ secrets.SPRING_DATA_MONGODB_URI }}
+      SPRING_DATA_MONGODB_DATABASE: ${{ secrets.SPRING_DATA_MONGODB_DATABASE }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_API_SERVER: ${{ secrets.OPENAI_API_SERVER }}
+      OPENAI_API_ENDPOINT: ${{ secrets.OPENAI_API_ENDPOINT }}
+      OPENAI_API_MODEL: ${{ secrets.OPENAI_API_MODEL }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_BUCKET_AVATARS: ${{ secrets.AWS_BUCKET_AVATARS }}
+      AWS_BUCKET_CHATS: ${{ secrets.AWS_BUCKET_CHATS }}
+      AWS_AVATARS_URL: ${{ secrets.AWS_AVATARS_URL }}
+      
     steps:
     - uses: actions/checkout@v4
     - name: Set up JDK 21
