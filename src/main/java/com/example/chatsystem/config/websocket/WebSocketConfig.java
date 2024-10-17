@@ -1,6 +1,7 @@
 package com.example.chatsystem.config.websocket;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -20,6 +21,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private SubscriptionInterceptor subscriptionInterceptor;
     private CorsConfiguration corsConfiguration;
 
+    @Value("${cors.allowed-origins}")
+    private String[] allowedOrigins;
+
     @Autowired
     public void setJwtInterceptor(JwtInterceptor jwtInterceptor, SubscriptionInterceptor subscriptionInterceptor,
                                   CorsConfiguration corsConfiguration) {
@@ -32,7 +36,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         System.out.println(corsConfiguration.getAllowedOrigins());
         registry.addEndpoint("/ws")
-                .setAllowedOrigins("http://localhost:5173")
+                .setAllowedOrigins(allowedOrigins)
                 .addInterceptors(jwtInterceptor);
     }
 

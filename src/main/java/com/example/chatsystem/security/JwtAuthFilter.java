@@ -1,6 +1,5 @@
 package com.example.chatsystem.security;
 
-import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -32,7 +31,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
     Cookie[] cookies = request.getCookies();
     String token;
-    String username = null;
+    //String username = null;
     String userId = null;
 
     if (cookies != null) {
@@ -40,9 +39,16 @@ protected void doFilterInternal(HttpServletRequest request, HttpServletResponse 
             if (cookie.getName().equals("jwt")) {
                 try {
                     token = cookie.getValue();
-                    username = jwtService.extractUsername(token);
+                    //username = jwtService.extractUsername(token);
                     userId = jwtService.extractUserId(token);
-                }catch (JwtException e){
+                }catch (Exception e){
+                    Cookie emptyCookie = new Cookie(cookie.getName(), "");
+                    emptyCookie.setPath("/");
+                    emptyCookie.setMaxAge(3600 * 24 * 7);
+                    emptyCookie.setDomain("localhost");
+                    emptyCookie.setSecure(false);
+                    emptyCookie.setHttpOnly(true);
+                    response.addCookie(emptyCookie);
                     response.sendError(HttpServletResponse.SC_FORBIDDEN);
                     return;
                 }
@@ -50,14 +56,21 @@ protected void doFilterInternal(HttpServletRequest request, HttpServletResponse 
         }
     }
 
-    if(username != null && SecurityContextHolder.getContext().getAuthentication() == null){
+    if(userId != null && SecurityContextHolder.getContext().getAuthentication() == null){
         try {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            UserDetails userDetails = userDetailsService.loadUserByUserId(userId);
             UsernamePasswordAuthenticationToken authenticationToken =
                     new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
             authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authenticationToken);
         }catch (UsernameNotFoundException e){
+            Cookie emptyCookie = new Cookie("jwt", "");
+            emptyCookie.setPath("/");
+            emptyCookie.setMaxAge(3600 * 24 * 7);
+            emptyCookie.setDomain("localhost");
+            emptyCookie.setSecure(false);
+            emptyCookie.setHttpOnly(true);
+            response.addCookie(emptyCookie);
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }

@@ -11,6 +11,7 @@ import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.stereotype.Controller;
 
 import java.util.Map;
+import java.util.Objects;
 
 @Controller
 public class ChatWebSocketController {
@@ -25,54 +26,54 @@ public class ChatWebSocketController {
     @MessageMapping("/chat.sendToBot")
     public void sendToBot(@Payload MessageSendDTO messageSendDTO, SimpMessageHeaderAccessor headerAccessor) {
         Map<String, Object> attributes = headerAccessor.getSessionAttributes();
-        ObjectId userId = (ObjectId) attributes.get("userId");
-        String username = (String) attributes.get("username");
-        webSocketService.handleMessageToBot(messageSendDTO, username);
+        ObjectId userId = (ObjectId) Objects.requireNonNull(attributes).get("userId");
+        //String username = (String) attributes.get("username");
+        webSocketService.handleMessageToBot(messageSendDTO, userId);
     }
 
     @MessageMapping("/chat.sendFileToBot")
     public void sendFileToBot(@Payload byte[] payload, SimpMessageHeaderAccessor headerAccessor) {
         Map<String, Object> attributes = headerAccessor.getSessionAttributes();
-        ObjectId userId = (ObjectId) attributes.get("userId");
-        String username = (String) attributes.get("username");
-        String fileType = headerAccessor.getNativeHeader("file-type").get(0);
-        String botName = headerAccessor.getNativeHeader("receiver-name").get(0);
-        webSocketService.handleFileToBot(payload, MessageType.fromValue(fileType), username, botName);
+        ObjectId userId = (ObjectId) Objects.requireNonNull(attributes).get("userId");
+        //String username = (String) attributes.get("username");
+        String fileType = Objects.requireNonNull(headerAccessor.getNativeHeader("file-type")).getFirst();
+        String botName = Objects.requireNonNull(headerAccessor.getNativeHeader("receiver-name")).getFirst();
+        webSocketService.handleFileToBot(payload, MessageType.fromValue(fileType), userId, botName);
     }
 
     @MessageMapping("/chat.sendToPrivate")
     public void sendToPrivate(@Payload MessageSendDTO messageSendDTO, SimpMessageHeaderAccessor headerAccessor) {
         Map<String, Object> attributes = headerAccessor.getSessionAttributes();
-        ObjectId userId = (ObjectId) attributes.get("userId");
-        String username = (String) attributes.get("username");
-        webSocketService.handlePrivateMessage(messageSendDTO, username);
+        ObjectId userId = (ObjectId) Objects.requireNonNull(attributes).get("userId");
+        //String username = (String) attributes.get("username");
+        webSocketService.handlePrivateMessage(messageSendDTO, userId);
     }
 
     @MessageMapping("/chat.sendFileToPrivate")
     public void sendFileToPrivate(@Payload byte[] payload, SimpMessageHeaderAccessor headerAccessor) {
         Map<String, Object> attributes = headerAccessor.getSessionAttributes();
-        ObjectId userId = (ObjectId) attributes.get("userId");
-        String username = (String) attributes.get("username");
-        String fileType = headerAccessor.getNativeHeader("file-type").get(0);
-        String receiverName = headerAccessor.getNativeHeader("receiver-name").get(0);
-        webSocketService.handleFileToPrivate(payload, MessageType.fromValue(fileType), username, receiverName);
+        ObjectId userId = (ObjectId) Objects.requireNonNull(attributes).get("userId");
+        //String username = (String) attributes.get("username");
+        String fileType = Objects.requireNonNull(headerAccessor.getNativeHeader("file-type")).getFirst();
+        String receiverName = Objects.requireNonNull(headerAccessor.getNativeHeader("receiver-name")).getFirst();
+        webSocketService.handleFileToPrivate(payload, MessageType.fromValue(fileType), userId, receiverName);
     }
 
     @MessageMapping("/chat.sendToGroup")
     public void sendToGroup(@Payload MessageSendDTO messageSendDTO, SimpMessageHeaderAccessor headerAccessor) {
         Map<String, Object> attributes = headerAccessor.getSessionAttributes();
-        ObjectId userId = (ObjectId) attributes.get("userId");
-        String username = (String) attributes.get("username");
-        webSocketService.handleGroupMessage(messageSendDTO, username);
+        ObjectId userId = (ObjectId) Objects.requireNonNull(attributes).get("userId");
+        //String username = (String) attributes.get("username");
+        webSocketService.handleGroupMessage(messageSendDTO, userId);
     }
 
     @MessageMapping("/chat.sendFileToGroup")
     public void sendFileToGroup(@Payload byte[] payload, SimpMessageHeaderAccessor headerAccessor) {
         Map<String, Object> attributes = headerAccessor.getSessionAttributes();
-        ObjectId userId = (ObjectId) attributes.get("userId");
-        String username = (String) attributes.get("username");
-        String fileType = headerAccessor.getNativeHeader("file-type").get(0);
-        String groupName = headerAccessor.getNativeHeader("receiver-name").get(0);
-        webSocketService.handleFileToGroup(payload, MessageType.fromValue(fileType), username, groupName);
+        ObjectId userId = (ObjectId) Objects.requireNonNull(attributes).get("userId");
+        //String username = (String) attributes.get("username");
+        String fileType = Objects.requireNonNull(headerAccessor.getNativeHeader("file-type")).getFirst();
+        String groupName = Objects.requireNonNull(headerAccessor.getNativeHeader("receiver-name")).getFirst();
+        webSocketService.handleFileToGroup(payload, MessageType.fromValue(fileType), userId, groupName);
     }
 }

@@ -6,8 +6,8 @@ import com.example.chatsystem.dto.websocket.MessageReceiveDTO;
 import com.example.chatsystem.dto.websocket.MessageSendDTO;
 import com.example.chatsystem.model.ChatType;
 import com.example.chatsystem.model.MessageType;
+import com.example.chatsystem.model.User;
 import com.example.chatsystem.security.MyUserDetails;
-import com.example.chatsystem.security.MyUserDetailsService;
 import com.example.chatsystem.service.MessageService;
 import com.example.chatsystem.service.UserService;
 import com.example.chatsystem.service.WebSocketService;
@@ -27,15 +27,13 @@ public class WebSocketServiceImpl implements WebSocketService {
     private final SimpMessagingTemplate messagingTemplate;
     private final MessageService messageService;
     private final BotService botService;
-    private final MyUserDetailsService myUserDetailsService;
     private final UserService userService;
 
     @Autowired
-    public WebSocketServiceImpl(SimpMessagingTemplate messagingTemplate, MessageService messageService, BotService botService, MyUserDetailsService myUserDetailsService, UserService userService) {
+    public WebSocketServiceImpl(SimpMessagingTemplate messagingTemplate, MessageService messageService, BotService botService, UserService userService) {
         this.messagingTemplate = messagingTemplate;
         this.messageService = messageService;
         this.botService = botService;
-        this.myUserDetailsService = myUserDetailsService;
         this.userService = userService;
     }
 
@@ -55,31 +53,35 @@ public class WebSocketServiceImpl implements WebSocketService {
     }
 
     @Override
-    public void handleMessageToBot(MessageSendDTO messageSendDTO, String senderName) {
+    public void handleMessageToBot(MessageSendDTO messageSendDTO, ObjectId senderId) {
         String botName = messageSendDTO.getReceiverName();
+        User sender = userService.findById(senderId);
+
         //  persist user message
-        MessageReceiveDTO userMessageReceiveDTO = messageService.buildMessageReceiveDTO(messageSendDTO, senderName);
-        ObjectId userId = userService.findByUsername(senderName).getUserId();
+        MessageReceiveDTO userMessageReceiveDTO = messageService.buildMessageReceiveDTO(messageSendDTO, sender.getUsername());
         ObjectId botId = botService.getBotByName(botName).getId();
-        messageService.persistBotMessage(userMessageReceiveDTO, userId, botId);
+        messageService.persistBotMessage(userMessageReceiveDTO, senderId, botId);
 
         //  pull messages
-        MyUserDetails userDetails = myUserDetailsService.loadUserByUsername(senderName);
+        MyUserDetails userDetails = new MyUserDetails(sender.getUsername(), null,
+                null, senderId.toHexString(), null);
         List<MessageDTO> messageDTOs = messageService.getBotChatMessages(userDetails, botName);
 
         //  prompt bot
-        MessageSendDTO botSendDTO = botService.handleMessage(messageDTOs, messageSendDTO, senderName);
+        MessageSendDTO botSendDTO = botService.handleMessage(messageDTOs, messageSendDTO, sender.getUsername());
 
         //  persist bot message
         MessageReceiveDTO botMessageReceiveDTO = messageService.buildMessageReceiveDTO(botSendDTO, botName);
-        messageService.persistBotMessage(botMessageReceiveDTO, botId, userId);
+        messageService.persistBotMessage(botMessageReceiveDTO, botId, senderId);
 
         sendBotMessage(botSendDTO.getReceiverName(), botMessageReceiveDTO);
     }
 
     @Override
-    public void handlePrivateMessage(MessageSendDTO messageSendDTO, String senderName){
-        MessageReceiveDTO messageReceiveDTO = messageService.buildMessageReceiveDTO(messageSendDTO, senderName);
+    public void handlePrivateMessage(MessageSendDTO messageSendDTO, ObjectId senderId){
+        User sender = userService.findById(senderId);
+        MessageReceiveDTO messageReceiveDTO = messageService.buildMessageReceiveDTO(messageSendDTO, sender.getUsername());
+
         //  persist
         messageService.persistPrivateMessage(messageSendDTO, messageReceiveDTO);
 
@@ -87,8 +89,9 @@ public class WebSocketServiceImpl implements WebSocketService {
     }
 
     @Override
-    public void handleGroupMessage(MessageSendDTO messageSendDTO, String senderName){
-        MessageReceiveDTO messageReceiveDTO = messageService.buildMessageReceiveDTO(messageSendDTO, senderName);
+    public void handleGroupMessage(MessageSendDTO messageSendDTO, ObjectId senderId){
+        User sender = userService.findById(senderId);
+        MessageReceiveDTO messageReceiveDTO = messageService.buildMessageReceiveDTO(messageSendDTO, sender.getUsername());
         //  persist
         messageService.persistGroupMessage(messageSendDTO, messageReceiveDTO);
 
@@ -96,32 +99,31 @@ public class WebSocketServiceImpl implements WebSocketService {
     }
 
     @Override
-    public void handleFileToBot(byte[] payload, MessageType messageType, String senderName, String botName){
-        ObjectId senderId = userService.findByUsername(senderName).getUserId();
+    public void handleFileToBot(byte[] payload, MessageType messageType, ObjectId senderId, String botName){
+        User sender = userService.findById(senderId);
         ObjectId receiverId = botService.getBotByName(botName).getId();
 
         messageService.persistBotFile(new ByteArrayInputStream(payload), messageType, senderId, receiverId, ChatType.BOT);
         Map<String, Object> headers = new HashMap<>();
         headers.put("contentType", messageType.getValue());
 
-        messagingTemplate.convertAndSendToUser(senderName, "/private/messages", payload, headers);
+        messagingTemplate.convertAndSendToUser(sender.getUsername(), "/private/messages", payload, headers);
     }
 
     @Override
-    public void handleFileToPrivate(byte[] payload, MessageType messageType, String senderName, String receiverName) {
+    public void handleFileToPrivate(byte[] payload, MessageType messageType, ObjectId senderId, String receiverName) {
+        User sender = userService.findById(senderId);
         messageService.persistPrivateFile(new ByteArrayInputStream(payload),
-                messageType, senderName, receiverName, ChatType.PRIVATE);
+                messageType, sender.getUsername(), receiverName, ChatType.PRIVATE);
 
         Map<String, Object> headers = new HashMap<>();
         headers.put("contentType", messageType.getValue());
-        headers.put("sender", senderName);
+        headers.put("sender", sender.getUsername());
         messagingTemplate.convertAndSendToUser(receiverName, "/private/messages", payload, headers);
     }
 
     @Override
-    public void handleFileToGroup(byte[] payload, MessageType messageType, String senderName, String groupId) {
-        ObjectId senderId = userService.findByUsername(senderName).getUserId();
-
+    public void handleFileToGroup(byte[] payload, MessageType messageType, ObjectId senderId, String groupId) {
         messageService.persistGroupFile(new ByteArrayInputStream(payload), messageType, senderId, new ObjectId(groupId));
         Map<String, Object> headers = new HashMap<>();
         headers.put("contentType", messageType.getValue());
