@@ -67,8 +67,28 @@ public class AuthenticationController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<SignupResponse> signup(@RequestBody SignupRequest signupDTO){
+    public ResponseEntity<SignupResponse> signup(@RequestBody SignupRequest signupDTO) {
         SignupResponse response = userService.create(signupDTO);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("demo")
+    public ResponseEntity<AuthResponse> demo(HttpServletResponse response){
+        JwtResponse jwtResponse = authService.demo();
+
+        Cookie cookie = new Cookie("jwt", jwtResponse.getAccessToken());
+        cookie.setPath("/");
+        cookie.setMaxAge(3600 * 24 * 7);
+        cookie.setDomain("localhost");
+        cookie.setSecure(false);
+        cookie.setHttpOnly(true);
+        response.addCookie(cookie);
+
+        AuthResponse loginResponse = AuthResponse.builder()
+                .username(jwtResponse.getUsername())
+                .avatar(jwtResponse.getAvatar())
+                .build();
+
+        return ResponseEntity.ok(loginResponse);
     }
 }
