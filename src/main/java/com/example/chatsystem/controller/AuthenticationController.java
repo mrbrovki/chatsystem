@@ -5,6 +5,7 @@ import com.example.chatsystem.security.AuthService;
 import com.example.chatsystem.security.MyUserDetails;
 import com.example.chatsystem.service.UserService;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -24,16 +25,21 @@ public class AuthenticationController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest authRequest, HttpServletResponse response){
+    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest authRequest, HttpServletRequest request, HttpServletResponse response){
         JwtResponse jwtResponse = authService.authenticate(authRequest);
 
         Cookie cookie = new Cookie("jwt", jwtResponse.getAccessToken());
         cookie.setPath("/");
         cookie.setMaxAge(3600 * 24 * 7);
-        cookie.setDomain("localhost");
-        cookie.setSecure(false);
+        cookie.setDomain(request.getServerName());
+        cookie.setSecure(true);
         cookie.setHttpOnly(true);
-        response.addCookie(cookie);
+
+        response.setHeader("Set-Cookie", cookie.getName() + "=" + cookie.getValue() +
+                "; Path=" + cookie.getPath() +
+                "; Max-Age=" + cookie.getMaxAge() +
+                "; Domain=" + cookie.getDomain() +
+                "; Secure; HttpOnly; SameSite=None");
 
         AuthResponse loginResponse = AuthResponse.builder()
                 .username(jwtResponse.getUsername())
@@ -44,13 +50,13 @@ public class AuthenticationController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(HttpServletResponse response){
+    public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response){
 
         Cookie cookie = new Cookie("jwt", "");
         cookie.setPath("/");
         cookie.setMaxAge(0);
-        cookie.setDomain("localhost");
-        cookie.setSecure(false);
+        cookie.setDomain(request.getServerName());
+        cookie.setSecure(true);
         cookie.setHttpOnly(true);
         response.addCookie(cookie);
 
@@ -73,14 +79,14 @@ public class AuthenticationController {
     }
 
     @PostMapping("demo")
-    public ResponseEntity<AuthResponse> demo(HttpServletResponse response){
+    public ResponseEntity<AuthResponse> demo(HttpServletResponse response, HttpServletRequest httpServletRequest){
         JwtResponse jwtResponse = authService.demo();
 
         Cookie cookie = new Cookie("jwt", jwtResponse.getAccessToken());
         cookie.setPath("/");
         cookie.setMaxAge(3600 * 24 * 7);
-        cookie.setDomain("localhost");
-        cookie.setSecure(false);
+        cookie.setDomain(httpServletRequest.getServerName());
+        cookie.setSecure(true);
         cookie.setHttpOnly(true);
         response.addCookie(cookie);
 

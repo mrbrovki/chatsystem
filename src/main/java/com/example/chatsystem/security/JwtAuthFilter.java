@@ -44,9 +44,9 @@ protected void doFilterInternal(HttpServletRequest request, HttpServletResponse 
                 }catch (Exception e){
                     Cookie emptyCookie = new Cookie(cookie.getName(), "");
                     emptyCookie.setPath("/");
-                    emptyCookie.setMaxAge(3600 * 24 * 7);
-                    emptyCookie.setDomain("localhost");
-                    emptyCookie.setSecure(false);
+                    emptyCookie.setMaxAge(0);
+                    emptyCookie.setDomain(request.getServerName());
+                    emptyCookie.setSecure(true);
                     emptyCookie.setHttpOnly(true);
                     response.addCookie(emptyCookie);
                     response.sendError(HttpServletResponse.SC_FORBIDDEN);
@@ -66,9 +66,9 @@ protected void doFilterInternal(HttpServletRequest request, HttpServletResponse 
         }catch (UsernameNotFoundException e){
             Cookie emptyCookie = new Cookie("jwt", "");
             emptyCookie.setPath("/");
-            emptyCookie.setMaxAge(3600 * 24 * 7);
-            emptyCookie.setDomain("localhost");
-            emptyCookie.setSecure(false);
+            emptyCookie.setMaxAge(0);
+            emptyCookie.setDomain(request.getServerName());
+            emptyCookie.setSecure(true);
             emptyCookie.setHttpOnly(true);
             response.addCookie(emptyCookie);
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
