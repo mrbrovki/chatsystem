@@ -25,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -62,10 +63,25 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public boolean delete(ObjectId id) {
+        Optional<User> user = userRepository.findById(id);
+        boolean isSucecess = false;
+
+        if (user.isPresent()) {
+            userRepository.delete(user.get());
+            isSucecess = true;
+        }
+        return isSucecess;
+    }
+
+    @Override
     public JwtResponse edit(ObjectId userId, EditRequest editRequest) {
         User user = findById(userId);
-        user.setUsername(editRequest.getUsername());
-        user.setHashedPassword(passwordEncoder.encode(editRequest.getPassword()));
+        String newPassword = editRequest.getPassword();
+
+        if(!newPassword.isBlank()){
+            user.setHashedPassword(passwordEncoder.encode(newPassword));
+        }
 
         MultipartFile avatar = editRequest.getAvatar();
         try {
@@ -118,13 +134,17 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<String> addPrivateChatToUser(ObjectId userId, AddPrivateChatRequest privateChatDTO) {
+    public PrivateChatResponse addPrivateChatToUser(ObjectId userId, AddPrivateChatRequest privateChatDTO) {
         User user = findById(userId);
         List<ObjectId> chats = user.getPrivateChats();
         User targetUser = findByUsername(privateChatDTO.getUsername());
         chats.add(targetUser.getUserId());
         userRepository.update(user);
-        return chats.stream().map((chatUserId)->findById(chatUserId).getUsername()).toList();
+        return PrivateChatResponse.builder()
+                .username(targetUser.getUsername())
+                .avatar(targetUser.getAvatar())
+                .type(ChatType.PRIVATE)
+                .build();
     }
 
     @Override
@@ -137,13 +157,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<String> removePrivateChatFromUser(ObjectId userId, AddPrivateChatRequest privateChatDTO) {
-        User user = findById(userId);
+    public void removePrivateChatFromUser(User user, ObjectId chatId) {
         List<ObjectId> chats = user.getPrivateChats();
-        User targetUser = findByUsername(privateChatDTO.getUsername());
-        chats.remove(targetUser.getUserId());
+        chats.remove(chatId);
         userRepository.update(user);
-        return chats.stream().map((chatUserId)->findById(chatUserId).getUsername()).toList();
     }
 
 

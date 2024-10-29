@@ -13,6 +13,7 @@ import java.util.List;
 
 public interface UserService {
     SignupResponse create(SignupRequest signupDTO);
+    boolean delete(ObjectId id);
     JwtResponse edit(ObjectId id, EditRequest editUserDTO);
 
     List<PrivateChatResponse> findAll();
@@ -22,11 +23,11 @@ public interface UserService {
 
     boolean doesUsernameExist(String username);
 
-    List<String> addPrivateChatToUser(ObjectId userId, AddPrivateChatRequest privateChatDTO);
+    PrivateChatResponse addPrivateChatToUser(ObjectId userId, AddPrivateChatRequest privateChatDTO);
 
     List<String> addPrivateChatToUser(User user, ObjectId chatUserId);
 
-    List<String> removePrivateChatFromUser(ObjectId userId, AddPrivateChatRequest privateChatDTO);
+    void removePrivateChatFromUser(User user, ObjectId chatId);
 
     List<ObjectId> addGroupChatToUser(ObjectId userId, ObjectId chatId);
 

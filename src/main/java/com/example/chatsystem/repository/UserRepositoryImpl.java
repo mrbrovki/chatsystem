@@ -1,6 +1,7 @@
 package com.example.chatsystem.repository;
 
 import com.example.chatsystem.model.User;
+import com.mongodb.client.result.DeleteResult;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -48,8 +49,8 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public void delete(User user) {
-        mongoTemplate.remove(user);
+    public boolean delete(User user) {
+        DeleteResult deleteResult = mongoTemplate.remove(user);
+        return deleteResult.wasAcknowledged();
     }
-
 }
