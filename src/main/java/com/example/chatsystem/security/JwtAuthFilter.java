@@ -1,5 +1,6 @@
 package com.example.chatsystem.security;
 
+import com.example.chatsystem.utils.CookieUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -28,54 +29,43 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
 @Override
-protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-    Cookie[] cookies = request.getCookies();
-    String token;
-    //String username = null;
-    String userId = null;
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+                                FilterChain filterChain) throws ServletException, IOException {
+        Cookie[] cookies = request.getCookies();
+        String token;
+        String userId = null;
 
-    if (cookies != null) {
-        for (Cookie cookie : cookies) {
-            if (cookie.getName().equals("jwt")) {
-                try {
-                    token = cookie.getValue();
-                    //username = jwtService.extractUsername(token);
-                    userId = jwtService.extractUserId(token);
-                }catch (Exception e){
-                    Cookie emptyCookie = new Cookie(cookie.getName(), "");
-                    emptyCookie.setPath("/");
-                    emptyCookie.setMaxAge(0);
-                    emptyCookie.setDomain(request.getServerName());
-                    emptyCookie.setSecure(true);
-                    emptyCookie.setHttpOnly(true);
-                    response.addCookie(emptyCookie);
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN);
-                    return;
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (cookie.getName().equals("jwt")) {
+                    try {
+                        token = cookie.getValue();
+                        userId = jwtService.extractUserId(token);
+                    }catch (Exception e){
+                        CookieUtils.addCookie(response, "jwt", "",
+                                0, request.getServerName());
+                        response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                        return;
+                    }
                 }
             }
         }
-    }
 
-    if(userId != null && SecurityContextHolder.getContext().getAuthentication() == null){
-        try {
-            UserDetails userDetails = userDetailsService.loadUserByUserId(userId);
-            UsernamePasswordAuthenticationToken authenticationToken =
-                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-            authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-        }catch (UsernameNotFoundException e){
-            Cookie emptyCookie = new Cookie("jwt", "");
-            emptyCookie.setPath("/");
-            emptyCookie.setMaxAge(0);
-            emptyCookie.setDomain(request.getServerName());
-            emptyCookie.setSecure(true);
-            emptyCookie.setHttpOnly(true);
-            response.addCookie(emptyCookie);
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-            return;
+        if(userId != null && SecurityContextHolder.getContext().getAuthentication() == null){
+            try {
+                UserDetails userDetails = userDetailsService.loadUserByUserId(userId);
+                UsernamePasswordAuthenticationToken authenticationToken =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+            }catch (UsernameNotFoundException e){
+                CookieUtils.addCookie(response, "jwt", "",
+                        0, request.getServerName());
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                return;
+            }
         }
-    }
 
-    filterChain.doFilter(request, response);
-}
+        filterChain.doFilter(request, response);
+    }
 }

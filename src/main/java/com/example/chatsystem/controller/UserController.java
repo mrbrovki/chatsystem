@@ -6,8 +6,9 @@ import com.example.chatsystem.dto.user.EditRequest;
 import com.example.chatsystem.dto.user.EditResponse;
 import com.example.chatsystem.security.MyUserDetails;
 import com.example.chatsystem.service.UserService;
+import com.example.chatsystem.utils.CookieUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.Errors;
+import org.springframework.validation.Validator;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,13 +25,15 @@ import java.io.IOException;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v3/users")
+@RequestMapping("/api/v4/users")
 public class UserController {
     private final UserService userService;
+    private final Validator validator;
 
     @Autowired
-    public UserController(UserService userService) {
+    public UserController(UserService userService, Validator validator) {
         this.userService = userService;
+        this.validator = validator;
     }
 
     @GetMapping("/exists")
@@ -52,12 +57,17 @@ public class UserController {
     public ResponseEntity<EditResponse> editUser(@AuthenticationPrincipal MyUserDetails userDetails,
                                                  @RequestPart("json") String json,
                                                  @RequestPart("avatar") MultipartFile avatar,
+                                                 HttpServletRequest httpServletRequest,
                                                  HttpServletResponse response) {
 
         EditRequest request;
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             request = objectMapper.readValue(json, EditRequest.class);
+            Errors errors = validator.validateObject(request);
+            if (errors.hasErrors()) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
             request.setAvatar(avatar);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -65,13 +75,8 @@ public class UserController {
 
         JwtResponse jwtResponse = userService.edit(new ObjectId(userDetails.getUserId()), request);
 
-        Cookie cookie = new Cookie("jwt", jwtResponse.getAccessToken());
-        cookie.setPath("/");
-        cookie.setMaxAge(3600 * 24 * 7);
-        cookie.setDomain("localhost");
-        cookie.setSecure(false);
-        cookie.setHttpOnly(true);
-        response.addCookie(cookie);
+        CookieUtils.addCookie(response, "jwt", jwtResponse.getAccessToken(),
+                3600 * 24 * 7, httpServletRequest.getServerName());
 
         EditResponse editResponse = EditResponse.builder()
                 .avatar(jwtResponse.getAvatar())
@@ -79,5 +84,13 @@ public class UserController {
                 .build();
 
         return ResponseEntity.ok(editResponse);
+    }
+    @DeleteMapping("/delete")
+    public ResponseEntity<Void> deleteUser(@AuthenticationPrincipal MyUserDetails userDetails,
+                                           HttpServletRequest request,HttpServletResponse response) {
+        boolean isSuccess = userService.delete(new ObjectId(userDetails.getUserId()));
+        CookieUtils.addCookie(response, "jwt", "",
+                0, request.getServerName());
+        return ResponseEntity.noContent().build();
     }
 }

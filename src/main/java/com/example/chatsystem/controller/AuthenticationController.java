@@ -4,16 +4,17 @@ import com.example.chatsystem.dto.auth.*;
 import com.example.chatsystem.security.AuthService;
 import com.example.chatsystem.security.MyUserDetails;
 import com.example.chatsystem.service.UserService;
-import jakarta.servlet.http.Cookie;
+import com.example.chatsystem.utils.CookieUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("api/v3/auth")
+@RequestMapping("api/v4/auth")
 public class AuthenticationController {
     private final AuthService authService;
     private final UserService userService;
@@ -25,21 +26,11 @@ public class AuthenticationController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest authRequest, HttpServletRequest request, HttpServletResponse response){
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest authRequest, HttpServletRequest request, HttpServletResponse response){
         JwtResponse jwtResponse = authService.authenticate(authRequest);
 
-        Cookie cookie = new Cookie("jwt", jwtResponse.getAccessToken());
-        cookie.setPath("/");
-        cookie.setMaxAge(3600 * 24 * 7);
-        cookie.setDomain(request.getServerName());
-        cookie.setSecure(true);
-        cookie.setHttpOnly(true);
-
-        response.setHeader("Set-Cookie", cookie.getName() + "=" + cookie.getValue() +
-                "; Path=" + cookie.getPath() +
-                "; Max-Age=" + cookie.getMaxAge() +
-                "; Domain=" + cookie.getDomain() +
-                "; Secure; HttpOnly; SameSite=None");
+        CookieUtils.addCookie(response, "jwt", jwtResponse.getAccessToken(),
+                3600 * 24 * 7, request.getServerName());
 
         AuthResponse loginResponse = AuthResponse.builder()
                 .username(jwtResponse.getUsername())
@@ -52,13 +43,8 @@ public class AuthenticationController {
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response){
 
-        Cookie cookie = new Cookie("jwt", "");
-        cookie.setPath("/");
-        cookie.setMaxAge(0);
-        cookie.setDomain(request.getServerName());
-        cookie.setSecure(true);
-        cookie.setHttpOnly(true);
-        response.addCookie(cookie);
+        CookieUtils.addCookie(response, "jwt", "",
+                0, request.getServerName());
 
         return ResponseEntity.noContent().build();
     }
@@ -73,7 +59,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<SignupResponse> signup(@RequestBody SignupRequest signupDTO) {
+    public ResponseEntity<SignupResponse> signup(@Valid @RequestBody SignupRequest signupDTO) {
         SignupResponse response = userService.create(signupDTO);
         return ResponseEntity.ok(response);
     }
@@ -82,13 +68,8 @@ public class AuthenticationController {
     public ResponseEntity<AuthResponse> demo(HttpServletResponse response, HttpServletRequest httpServletRequest){
         JwtResponse jwtResponse = authService.demo();
 
-        Cookie cookie = new Cookie("jwt", jwtResponse.getAccessToken());
-        cookie.setPath("/");
-        cookie.setMaxAge(3600 * 24 * 7);
-        cookie.setDomain(httpServletRequest.getServerName());
-        cookie.setSecure(true);
-        cookie.setHttpOnly(true);
-        response.addCookie(cookie);
+        CookieUtils.addCookie(response, "jwt", jwtResponse.getAccessToken(),
+                3600 * 24 * 7, httpServletRequest.getServerName());
 
         AuthResponse loginResponse = AuthResponse.builder()
                 .username(jwtResponse.getUsername())
