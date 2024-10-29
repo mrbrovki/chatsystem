@@ -1,5 +1,6 @@
 package com.example.chatsystem.dto.groupchat;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,7 +14,9 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class CreateGroupRequest {
-    private List<String> memberNames;
+    @NotBlank
     private String name;
+
+    private List<String> memberNames;
     private MultipartFile image;
 }
