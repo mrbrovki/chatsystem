@@ -5,14 +5,16 @@ import com.example.chatsystem.dto.groupchat.CreateGroupRequest;
 import com.example.chatsystem.model.GroupChat;
 import com.example.chatsystem.security.MyUserDetails;
 import com.example.chatsystem.service.ChatService;
-import com.example.chatsystem.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.Valid;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.Errors;
+import org.springframework.validation.Validator;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,15 +23,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/v3/chats")
+@RequestMapping("api/v4/chats")
 public class ChatController {
     private final ChatService chatService;
-    private final UserService userService;
+    private final Validator validator;
 
     @Autowired
-    public ChatController(ChatService chatService, UserService userService) {
+    public ChatController(ChatService chatService, Validator validator) {
         this.chatService = chatService;
-        this.userService = userService;
+        this.validator = validator;
     }
 
     @GetMapping
@@ -43,9 +45,14 @@ public class ChatController {
                                                              @RequestPart("json") String json,
                                                              @RequestPart("image") MultipartFile image) {
         CreateGroupRequest request;
+
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             request = objectMapper.readValue(json,  CreateGroupRequest.class);
+            Errors errors = validator.validateObject(request);
+            if(errors.hasErrors()) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
             request.setImage(image);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -62,15 +69,23 @@ public class ChatController {
     }
 
     @GetMapping("/private/{username}")
-    public ResponseEntity<PrivateChatResponse> findPrivateChatByName(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable String username) {
+    public ResponseEntity<PrivateChatResponse> findPrivateChatByName(@AuthenticationPrincipal MyUserDetails userDetails,
+                                                                     @PathVariable String username) {
         return ResponseEntity.ok(chatService.findPrivateChatByName(new ObjectId(userDetails.getUserId()), username));
     }
 
-    @PutMapping("/private/add")
-    public ResponseEntity<List<String>> addPrivateChat(@AuthenticationPrincipal MyUserDetails userDetails,
-                                                       @RequestBody AddPrivateChatRequest privateChatDTO) {
-        List<String> chatUsernames = userService.addPrivateChatToUser(new ObjectId(userDetails.getUserId()), privateChatDTO);
-        return ResponseEntity.ok(chatUsernames);
+    @PostMapping("/private/add")
+    public ResponseEntity<PrivateChatResponse> addPrivateChat(@AuthenticationPrincipal MyUserDetails userDetails,
+                                                       @Valid  @RequestBody AddPrivateChatRequest privateChatDTO) {
+        return ResponseEntity.ok(chatService.addPrivateChat(new ObjectId(userDetails.getUserId()), privateChatDTO));
+    }
+    @DeleteMapping("private/delete")
+    public ResponseEntity<PrivateChatResponse> deletePrivateChat(@AuthenticationPrincipal MyUserDetails userDetails,
+                                                                       @RequestParam String username,
+                                                                       @RequestParam boolean isForBoth) {
+        PrivateChatResponse privateChatResponse = chatService.deletePrivateChat(
+                new ObjectId(userDetails.getUserId()), username, isForBoth);
+        return  ResponseEntity.ok(privateChatResponse);
     }
 
     @GetMapping("/groups")
@@ -80,7 +95,8 @@ public class ChatController {
     }
 
     @GetMapping("/groups/{id}")
-    public ResponseEntity<GroupChatResponse> findGroupChat(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable("id") String groupId) {
+    public ResponseEntity<GroupChatResponse> findGroupChat(@AuthenticationPrincipal MyUserDetails userDetails,
+                                                           @PathVariable("id") String groupId) {
         GroupChatResponse chatsDTO = chatService.findById(new ObjectId(userDetails.getUserId()), new ObjectId(groupId));
         return ResponseEntity.ok(chatsDTO);
     }
@@ -127,13 +143,15 @@ public class ChatController {
     }
 
     @PostMapping("/groups/{id}/join")
-    public ResponseEntity<Void> joinGroupChat(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable("id") String chatId) {
+    public ResponseEntity<Void> joinGroupChat(@AuthenticationPrincipal MyUserDetails userDetails,
+                                              @PathVariable("id") String chatId) {
         chatService.addUserToGroup(new ObjectId(userDetails.getUserId()), new ObjectId(chatId));
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/groups/{id}/leave")
-    public ResponseEntity<Void> leaveGroupChat(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable("id") String chatId) {
+    public ResponseEntity<Void> leaveGroupChat(@AuthenticationPrincipal MyUserDetails userDetails,
+                                               @PathVariable("id") String chatId) {
         chatService.removeUserFromGroup(new ObjectId(userDetails.getUserId()), new ObjectId(chatId));
         return ResponseEntity.noContent().build();
     }

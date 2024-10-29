@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v2/messages")
+@RequestMapping("/api/v4/messages")
 public class MessageController {
     private final MessageService messageService;
     private final ChatService chatService;
@@ -55,7 +55,6 @@ public class MessageController {
         List<MessageDTO> messageDTOS = messageService.getBotChatMessages(userDetails, botName);
         return ResponseEntity.ok(messageDTOS);
     }
-
 
     @GetMapping("/groups/{groupId}")
     public ResponseEntity<List<MessageDTO>> getGroupChatMessages(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable String groupId){

@@ -10,6 +10,7 @@ import com.example.chatsystem.model.ChatType;
 import com.example.chatsystem.model.GroupChat;
 import com.example.chatsystem.model.ReadStatus;
 import com.example.chatsystem.model.User;
+import com.example.chatsystem.repository.GroupChatRepo;
 import com.example.chatsystem.service.*;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +27,7 @@ import static com.example.chatsystem.utils.CollectionUtils.buildCollectionName;
 
 @Service
 public class ChatServiceImpl implements ChatService {
-    private final GroupChatService groupChatService;
+    private final GroupChatRepo groupChatRepo;
     private final UserService userService;
     private final WebSocketService webSocketService;
     private final BotService botService;
@@ -37,8 +38,8 @@ public class ChatServiceImpl implements ChatService {
     private String avatarsUrl;
 
     @Autowired
-    public ChatServiceImpl(GroupChatService groupChatService, UserService userService, WebSocketService webSocketService, BotService botService, ReadStatusService readStatusService, S3Service s3Service) {
-        this.groupChatService = groupChatService;
+    public ChatServiceImpl(GroupChatRepo groupChatRepo, UserService userService, WebSocketService webSocketService, BotService botService, ReadStatusService readStatusService, S3Service s3Service) {
+        this.groupChatRepo = groupChatRepo;
         this.userService = userService;
         this.webSocketService = webSocketService;
         this.botService = botService;
@@ -48,7 +49,7 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public GroupChat findById(ObjectId id) {
-        return groupChatService.findById(id).orElseThrow(()->new DocumentNotFoundException("Chat " + id.toHexString() + " not found"));
+        return groupChatRepo.findById(id).orElseThrow(()->new DocumentNotFoundException("Chat " + id.toHexString() + " not found"));
     }
 
     @Override
@@ -72,7 +73,7 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public GroupChat updateGroupChat(GroupChat groupChat) {
-        return groupChatService.save(groupChat);
+        return groupChatRepo.save(groupChat);
     }
 
     @Override
@@ -93,7 +94,7 @@ public class ChatServiceImpl implements ChatService {
             for (ObjectId memberId : memberIds) {
                 webSocketService.unsubscribeUserToGroup(userService.findById(memberId).getUsername(), chatId);
             }
-            groupChatService.delete(groupChat);
+            groupChatRepo.delete(groupChat);
         }
     }
 
@@ -187,7 +188,7 @@ public class ChatServiceImpl implements ChatService {
         }
 
         //  save to mongodb
-        GroupChat createdGroupChat = groupChatService.save(groupChat);
+        GroupChat createdGroupChat = groupChatRepo.save(groupChat);
 
         //  add group chat to every member
         for (ObjectId memberId : memberIds) {
@@ -229,7 +230,15 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public ArrayList<PrivateChatResponse> findPrivateChats(ObjectId userId) {
         ArrayList<PrivateChatResponse> chatDTOs = new ArrayList<>();
-        User user = userService.findById(userId);
+        User user;
+        try {
+            user = userService.findById(userId);
+        }catch (DocumentNotFoundException e){
+            user = User.builder()
+                    .username("unknown")
+                    .build();
+        }
+
         setUserPrivateChats(chatDTOs, user);
         return chatDTOs;
     }
@@ -244,6 +253,26 @@ public class ChatServiceImpl implements ChatService {
                 .avatar(targetUser.getAvatar())
                 .lastReadTime(readStatus.getLastReadTime())
                 .type(ChatType.PRIVATE)
+                .build();
+    }
+
+    @Override
+    public PrivateChatResponse addPrivateChat(ObjectId userId, AddPrivateChatRequest privateChatDTO) {
+        return userService.addPrivateChatToUser(userId, privateChatDTO);
+    }
+
+    @Override
+    public PrivateChatResponse deletePrivateChat(ObjectId userId, String username, boolean isForBoth) {
+        User user = userService.findById(userId);
+        User targetUser = userService.findByUsername(username);
+        userService.removePrivateChatFromUser(user, targetUser.getUserId());
+
+        if(isForBoth){
+            userService.removePrivateChatFromUser(targetUser, user.getUserId());
+        }
+
+        return PrivateChatResponse.builder()
+                .username(username)
                 .build();
     }
 

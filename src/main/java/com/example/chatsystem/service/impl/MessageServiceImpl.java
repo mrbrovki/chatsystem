@@ -10,6 +10,7 @@ import com.example.chatsystem.dto.websocket.MessageSendDTO;
 import com.example.chatsystem.dto.message.MessagesResponse;
 import com.example.chatsystem.exception.DocumentNotFoundException;
 import com.example.chatsystem.model.*;
+import com.example.chatsystem.repository.GroupChatRepo;
 import com.example.chatsystem.repository.MessageRepository;
 import com.example.chatsystem.security.MyUserDetails;
 import com.example.chatsystem.service.*;
@@ -32,17 +33,17 @@ public class MessageServiceImpl implements MessageService {
     private final UserService userService;
     private final BotService botService;
     private final ReadStatusService readStatusService;
-    private final GroupChatService groupChatService;
+    private final GroupChatRepo groupChatRepo;
 
     @Autowired
     public MessageServiceImpl(MessageRepository messageRepository, S3Service s3Service, UserService userService,
-                              BotService botService, ReadStatusService readStatusService, GroupChatService groupChatService                              ) {
+                              BotService botService, ReadStatusService readStatusService, GroupChatRepo groupChatRepo) {
         this.messageRepository = messageRepository;
         this.s3Service = s3Service;
         this.userService = userService;
         this.botService = botService;
         this.readStatusService = readStatusService;
-        this.groupChatService = groupChatService;
+        this.groupChatRepo = groupChatRepo;
     }
 
     @Override
@@ -127,8 +128,9 @@ public class MessageServiceImpl implements MessageService {
         String collectionName = buildCollectionName(groupId, null, ChatType.GROUP);
         User sender = userService.findByUsername(messageReceiveDTO.getSenderName());
 
-        GroupChat groupChat = groupChatService.findById(groupId)
-                .orElseThrow(()->new DocumentNotFoundException("Chat " + groupId.toHexString() + " not found"));
+        GroupChat groupChat = groupChatRepo.findById(groupId)
+                .orElseThrow(()->
+                        new DocumentNotFoundException("Group " + groupId.toHexString() + " not found"));
 
         message.setId(sender.getUserId().toHexString()+messageReceiveDTO.getTimestamp());
         message.setSenderId(sender.getUserId());
@@ -145,8 +147,9 @@ public class MessageServiceImpl implements MessageService {
         long timestamp = Instant.now().toEpochMilli();
         String fileId = senderId.toHexString()+timestamp;
 
-        GroupChat groupChat = groupChatService.findById(groupId)
-                .orElseThrow(()->new DocumentNotFoundException("Chat " + groupId.toHexString() + " not found"));
+        GroupChat groupChat = groupChatRepo.findById(groupId)
+                .orElseThrow(()->
+                        new DocumentNotFoundException("Group " + groupId.toHexString() + " not found"));
 
         //upload to s3
         String key = collectionName + "/" + fileId;
@@ -234,7 +237,8 @@ public class MessageServiceImpl implements MessageService {
         HashMap<String, List<MessageDTO>> groupChatsHM = new HashMap<>();
 
         for (ObjectId groupChatId : groupChats) {
-            GroupChat groupChat = groupChatService.findById(groupChatId).orElseThrow();
+            GroupChat groupChat = groupChatRepo.findById(groupChatId).orElseThrow(()->
+                    new DocumentNotFoundException("Group " + groupChatId.toHexString() + " not found"));
             groupChatsHM.put(groupChat.getId().toHexString(), getGroupChatMessages(userDetails, groupChat));
         }
 
@@ -340,7 +344,9 @@ public class MessageServiceImpl implements MessageService {
                     key = buildCollectionName(userId, botId, chatType) + "/" + senderId.toHexString() + fileId;
                 break;
             case GROUP:
-                        GroupChat groupChat = groupChatService.findById(new ObjectId(chatName)).orElseThrow();
+                        GroupChat groupChat = groupChatRepo.findById(new ObjectId(chatName))
+                                .orElseThrow(()->
+                                        new DocumentNotFoundException("Group " + chatName + " not found"));
                         List<ObjectId> memberIds = groupChat.getMemberIds();
                         for (ObjectId memberId : memberIds) {
                             User member = userService.findById(memberId);
