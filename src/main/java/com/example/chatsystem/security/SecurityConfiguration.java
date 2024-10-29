@@ -19,7 +19,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -29,7 +28,7 @@ public class SecurityConfiguration {
     private final MyUserDetailsService myUserDetailsService;
 
     @Value("${cors.allowed-origins}")
-    private ArrayList<String> allowedOrigins;
+    private String[] allowedOrigins;
 
     @Autowired
     public SecurityConfiguration(JwtAuthFilter jwtAuthFilter, MyUserDetailsService myUserDetailsService){
@@ -49,9 +48,9 @@ public class SecurityConfiguration {
         http.csrf(AbstractHttpConfigurer::disable);
         http.authorizeHttpRequests(configurer ->
                         configurer
-                                .requestMatchers("/api/v3/auth/authenticate").authenticated()
-                                .requestMatchers("/api/v3/auth/**").permitAll()
-                                .requestMatchers("/api/v3/users/exists").permitAll()
+                                .requestMatchers("/api/v4/auth/authenticate").authenticated()
+                                .requestMatchers("/api/v4/auth/**").permitAll()
+                                .requestMatchers("/api/v4/users/exists").permitAll()
                                 .requestMatchers("/api/**").authenticated()
                                 .requestMatchers("/ws/**").permitAll()
                                 .anyRequest().permitAll()
@@ -70,9 +69,9 @@ public class SecurityConfiguration {
 
     @Bean CorsConfiguration corsConfiguration(){
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(allowedOrigins);
+        configuration.setAllowedOriginPatterns(Arrays.asList(allowedOrigins));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
-        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowedHeaders(List.of("Content-Type"));
         configuration.setAllowCredentials(true);
         return configuration;
     }

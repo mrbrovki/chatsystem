@@ -31,7 +31,7 @@ jobs:
       AWS_BUCKET_AVATARS: ${{ secrets.AWS_BUCKET_AVATARS }}
       AWS_BUCKET_CHATS: ${{ secrets.AWS_BUCKET_CHATS }}
       AWS_AVATARS_URL: ${{ secrets.AWS_AVATARS_URL }}
-      
+
     steps:
     - uses: actions/checkout@v4
     - name: Set up JDK 21
@@ -42,3 +42,17 @@ jobs:
         cache: maven
     - name: Build with Maven
       run: mvn -B package --file pom.xml
+
+    - name: Prepare the JAR for deployment
+      run: cp target/*.jar my-app.jar
+
+    - name: Deploy to AWS Elastic Beanstalk
+      uses: einaregilsson/beanstalk-deploy@v22
+      with:
+        application_name: chat-server
+        environment_name: chat-server-env
+        aws_access_key: ${{ env.AWS_ACCESS_KEY_ID }}
+        aws_secret_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+        region: eu-central-1
+        version_label: 12345
+        deployment_package: my-app.jar
