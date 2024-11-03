@@ -3,7 +3,7 @@ package com.example.chatsystem.service;
 import com.example.chatsystem.dto.auth.JwtResponse;
 import com.example.chatsystem.dto.auth.SignupRequest;
 import com.example.chatsystem.dto.auth.SignupResponse;
-import com.example.chatsystem.dto.chat.AddPrivateChatRequest;
+import com.example.chatsystem.dto.chat.DeleteChatsRequest;
 import com.example.chatsystem.dto.chat.PrivateChatResponse;
 import com.example.chatsystem.dto.user.EditRequest;
 import com.example.chatsystem.model.User;
@@ -23,17 +23,18 @@ public interface UserService {
 
     boolean doesUsernameExist(String username);
 
-    PrivateChatResponse addPrivateChatToUser(ObjectId userId, AddPrivateChatRequest privateChatDTO);
+    void addPrivateChatToUser(ObjectId userId, ObjectId chatId);
 
-    List<String> addPrivateChatToUser(User user, ObjectId chatUserId);
+    void removePrivateChatFromUser(ObjectId userId, ObjectId chatId);
 
-    void removePrivateChatFromUser(User user, ObjectId chatId);
+    void addGroupChatToUser(ObjectId userId, ObjectId chatId);
 
-    List<ObjectId> addGroupChatToUser(ObjectId userId, ObjectId chatId);
+    void removeGroupChatFromUser(ObjectId userId, ObjectId chatId);
 
-    List<ObjectId> addGroupChatToUser(User user, ObjectId chatId);
 
-    List<ObjectId> removeGroupChatFromUser(ObjectId userId, ObjectId chatId);
+    void addBotChatToUser(ObjectId userId, ObjectId botId);
 
-    List<ObjectId> removeGroupChatFromUser(User user, ObjectId chatId);
+    void removeBotChatFromUser(ObjectId userId, ObjectId botId);
+
+    void removeChatsFromUser(ObjectId userId, DeleteChatsRequest request);
 }

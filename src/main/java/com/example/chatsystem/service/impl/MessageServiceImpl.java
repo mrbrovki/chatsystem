@@ -6,7 +6,6 @@ import com.example.chatsystem.bot.BotService;
 import com.example.chatsystem.config.websocket.aws.S3File;
 import com.example.chatsystem.dto.message.MessageDTO;
 import com.example.chatsystem.dto.websocket.MessageReceiveDTO;
-import com.example.chatsystem.dto.websocket.MessageSendDTO;
 import com.example.chatsystem.dto.message.MessagesResponse;
 import com.example.chatsystem.exception.DocumentNotFoundException;
 import com.example.chatsystem.model.*;
@@ -19,10 +18,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 
 import static com.example.chatsystem.utils.CollectionUtils.buildCollectionName;
 
@@ -49,6 +48,11 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public List<Message> findAllMessages(String collectionName) {
         return messageRepository.findAll(collectionName);
+    }
+
+    @Override
+    public List<Message> findAfter(String messageId, String collectionName) {
+        return messageRepository.findAfter(messageId, collectionName);
     }
 
     @Override
@@ -79,134 +83,112 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public void persistPrivateMessage(MessageSendDTO messageSendDTO, MessageReceiveDTO messageReceiveDTO) {
-        Message message = new Message();
-
-        User sender = userService.findByUsername(messageReceiveDTO.getSenderName());
-        User receiver = userService.findByUsername(messageSendDTO.getReceiverName());
-        message.setReceiverId(receiver.getUserId());
-        String collectionName = buildCollectionName(sender.getUserId(), receiver.getUserId(), ChatType.PRIVATE);
+    public void persistPrivateMessage(MessageReceiveDTO messageReceiveDTO, ObjectId senderId, String receiverName) {
+        User receiver = userService.findByUsername(receiverName);
+        String collectionName = buildCollectionName(senderId, receiver.getUserId(), ChatType.PRIVATE);
 
         if(!collectionExists(collectionName)) {
-            if (!sender.getPrivateChats().contains(receiver.getUserId())) {
-                userService.addPrivateChatToUser(sender, receiver.getUserId());
-            }
-            if (!receiver.getPrivateChats().contains(sender.getUserId())) {
-                userService.addPrivateChatToUser(receiver, sender.getUserId());
-            }
+            userService.addPrivateChatToUser(senderId, receiver.getUserId());
+        }
+        userService.addPrivateChatToUser(receiver.getUserId(), senderId);
+
+        Message message = persistMessage(collectionName, senderId, messageReceiveDTO);
+        readStatusService.persist(senderId, collectionName);
+    }
+
+    @Override
+    public void persistPrivateMessage(MessageReceiveDTO messageReceiveDTO, String collectionName,
+                                      ObjectId senderId, ObjectId receiverId) {
+        if(!collectionExists(collectionName)) {
+            userService.addPrivateChatToUser(senderId, receiverId);
+            userService.addPrivateChatToUser(receiverId, senderId);
         }
 
-        message.setId(sender.getUserId().toHexString()+messageReceiveDTO.getTimestamp());
-        message.setSenderId(sender.getUserId());
-        message.setContent(messageReceiveDTO.getContent());
-        message.setType(messageReceiveDTO.getType());
-        message.setTimestamp(messageReceiveDTO.getTimestamp());
-        saveMessage(collectionName, message);
-
-        readStatusService.updateReadStatus(collectionName, message, sender.getUserId());
+        Message message = persistMessage(collectionName, senderId, messageReceiveDTO);
+        readStatusService.persist(senderId, collectionName);
     }
 
     @Override
     public void persistBotMessage(MessageReceiveDTO messageReceiveDTO, ObjectId senderId, ObjectId receiverId) {
-        Message message = new Message();
         String collectionName = buildCollectionName(senderId, receiverId, ChatType.BOT);
 
+        Message message =  persistMessage(collectionName, senderId, messageReceiveDTO);
+        readStatusService.persist(senderId, collectionName);
+    }
+
+    @Override
+    public void persistBotMessage(MessageReceiveDTO messageReceiveDTO, String collectionName,
+                                  ObjectId senderId, ObjectId receiverId) {
+        Message message = persistMessage(collectionName, senderId, messageReceiveDTO);
+        readStatusService.persist(senderId, collectionName);
+    }
+
+    @Override
+    public void persistGroupMessage(MessageReceiveDTO messageReceiveDTO, ObjectId senderId, ObjectId groupId) {
+        String collectionName = buildCollectionName(groupId, null, ChatType.GROUP);
+
+        Message message = persistMessage(collectionName, senderId, messageReceiveDTO);
+        readStatusService.persist(senderId, collectionName);
+    }
+
+    @Override
+    public void persistGroupMessage(MessageReceiveDTO messageReceiveDTO, String collectionName,
+                                    ObjectId senderId) {
+        Message message = persistMessage(collectionName, senderId, messageReceiveDTO);
+        readStatusService.persist(senderId, collectionName);
+    }
+
+    @Override
+    public void persistGroupFile(MessageReceiveDTO messageReceiveDTO, InputStream inputStream, ObjectId senderId, ObjectId groupId) {
+        String collectionName = buildCollectionName(groupId, null, ChatType.GROUP);
+
+        //  upload to s3
+        String fileId = senderId.toHexString()+messageReceiveDTO.getTimestamp();
+        String key = collectionName + "/" + fileId;
+        PutObjectResult result = s3Service.uploadChatFile(inputStream, messageReceiveDTO.getType(), key);
+
+        //  persist
+        persistGroupMessage(messageReceiveDTO, collectionName, senderId);
+    }
+
+    @Override
+    public void persistBotFile(MessageReceiveDTO messageReceiveDTO, InputStream inputStream, ObjectId senderId, ObjectId receiverId){
+        String collectionName = buildCollectionName(senderId, receiverId, ChatType.BOT);
+
+        //upload to s3
+        String fileId = senderId.toHexString()+messageReceiveDTO.getTimestamp();
+        String key = collectionName + "/" + fileId;
+        PutObjectResult result = s3Service.uploadChatFile(inputStream, messageReceiveDTO.getType(), key);
+
+        //  persist
+        persistBotMessage(messageReceiveDTO, collectionName, senderId, receiverId);
+    }
+
+    @Override
+    public void persistPrivateFile(MessageReceiveDTO messageReceiveDTO, InputStream inputStream,
+                                   ObjectId senderId, String receiverName){
+        User receiver = userService.findByUsername(receiverName);
+        String collectionName = buildCollectionName(senderId, receiver.getUserId(), ChatType.PRIVATE);
+
+        //upload to s3
+        String fileId = senderId.toHexString()+messageReceiveDTO.getTimestamp();
+        String key = collectionName + "/" + fileId;
+        PutObjectResult result = s3Service.uploadChatFile(inputStream, messageReceiveDTO.getType(), key);
+
+        //  persist
+        persistPrivateMessage(messageReceiveDTO, collectionName, senderId, receiver.getUserId());
+    }
+
+    private Message persistMessage(String collectionName, ObjectId senderId, MessageReceiveDTO messageReceiveDTO) {
+        Message message = new Message();
         message.setId(senderId.toHexString()+messageReceiveDTO.getTimestamp());
         message.setSenderId(senderId);
         message.setContent(messageReceiveDTO.getContent());
-        message.setType(MessageType.TEXT);
-        message.setTimestamp(messageReceiveDTO.getTimestamp());
-        saveMessage(collectionName, message);
-        readStatusService.updateReadStatus(collectionName, message, senderId);
-    }
-
-    @Override
-    public void persistGroupMessage(MessageSendDTO messageSendDTO, MessageReceiveDTO messageReceiveDTO) {
-        Message message = new Message();
-        ObjectId groupId = new ObjectId(messageSendDTO.getReceiverName());
-
-        String collectionName = buildCollectionName(groupId, null, ChatType.GROUP);
-        User sender = userService.findByUsername(messageReceiveDTO.getSenderName());
-
-        GroupChat groupChat = groupChatRepo.findById(groupId)
-                .orElseThrow(()->
-                        new DocumentNotFoundException("Group " + groupId.toHexString() + " not found"));
-
-        message.setId(sender.getUserId().toHexString()+messageReceiveDTO.getTimestamp());
-        message.setSenderId(sender.getUserId());
-        message.setContent(messageReceiveDTO.getContent());
         message.setType(messageReceiveDTO.getType());
         message.setTimestamp(messageReceiveDTO.getTimestamp());
-        saveMessage(collectionName, message);
-        readStatusService.updateReadStatus(collectionName, message, sender.getUserId());
-    }
-
-    @Override
-    public void persistGroupFile(InputStream inputStream, MessageType messageType, ObjectId senderId, ObjectId groupId) {
-        String collectionName = buildCollectionName(groupId, null, ChatType.GROUP);
-        long timestamp = Instant.now().toEpochMilli();
-        String fileId = senderId.toHexString()+timestamp;
-
-        GroupChat groupChat = groupChatRepo.findById(groupId)
-                .orElseThrow(()->
-                        new DocumentNotFoundException("Group " + groupId.toHexString() + " not found"));
-
-        //upload to s3
-        String key = collectionName + "/" + fileId;
-        PutObjectResult result = s3Service.uploadChatFile(inputStream, messageType, key);
-
-        Message message = persistFileMessage(collectionName, senderId, fileId, messageType, timestamp);
-    }
-
-    @Override
-    public void persistBotFile(InputStream inputStream, MessageType messageType, ObjectId senderId, ObjectId receiverId,
-                               ChatType chatType){
-        String collectionName = buildCollectionName(senderId, receiverId, chatType);
-        long timestamp = Instant.now().toEpochMilli();
-        String fileId = senderId.toHexString()+timestamp;
-
-        //upload to s3
-        String key = collectionName + "/" + fileId;
-        PutObjectResult result = s3Service.uploadChatFile(inputStream, messageType, key);
-
-        Message message = persistFileMessage(collectionName, senderId, fileId, messageType, timestamp);
-    }
-    @Override
-    public void persistPrivateFile(InputStream inputStream, MessageType messageType, String senderName, String receiverName,
-                                   ChatType chatType){
-        User sender = userService.findByUsername(senderName);
-        User receiver = userService.findByUsername(receiverName);
-
-        String collectionName = buildCollectionName(sender.getUserId(), receiver.getUserId(), chatType);
-        long timestamp = Instant.now().toEpochMilli();
-        String fileId = sender.getUserId().toHexString()+timestamp;
-
-        if(!collectionExists(collectionName)) {
-            if (!sender.getPrivateChats().contains(receiver.getUserId())) {
-                userService.addPrivateChatToUser(sender, receiver.getUserId());
-            }
-            if (!receiver.getPrivateChats().contains(sender.getUserId())) {
-                userService.addPrivateChatToUser(receiver, sender.getUserId());
-            }
-        }
-
-        //upload to s3
-        String key = collectionName + "/" + fileId;
-        PutObjectResult result = s3Service.uploadChatFile(inputStream, messageType, key);
-
-        Message message = persistFileMessage(collectionName, sender.getUserId(), fileId, messageType, timestamp);
-    }
-
-    private Message persistFileMessage(String collectionName, ObjectId senderId, String fileId,
-                                       MessageType messageType, long timestamp){
-        Message message = new Message();
-        message.setId(fileId);
-        message.setSenderId(senderId);
-        message.setContent(String.valueOf(timestamp));
-        message.setType(messageType);
-        message.setTimestamp(timestamp);
         return saveMessage(collectionName, message);
     }
+
 
     @Override
     public boolean collectionExists(String collectionName) {
@@ -222,7 +204,7 @@ public class MessageServiceImpl implements MessageService {
 
         for (ObjectId privateChatId : privateChats) {
             User targetUser = userService.findById(privateChatId);
-            privateChatsHM.put(targetUser.getUsername(), getPrivateChatMessages(userDetails, targetUser.getUsername()));
+            privateChatsHM.put(targetUser.getUsername(), getPrivateChatMessages(new ObjectId(userDetails.getUserId()), userDetails.getUsername(), targetUser.getUsername()));
         }
 
         List<ObjectId> botChats = user.getBotChats();
@@ -230,7 +212,7 @@ public class MessageServiceImpl implements MessageService {
 
         for (ObjectId botChatId : botChats) {
             Bot bot = botService.getBotById(botChatId);
-            botChatsHM.put(bot.getName(), getBotChatMessages(userDetails, bot.getName()));
+            botChatsHM.put(bot.getName(), getBotChatMessages(new ObjectId(userDetails.getUserId()), userDetails.getUsername(),  bot.getName()));
         }
 
         List<ObjectId> groupChats = user.getGroupChats();
@@ -239,7 +221,7 @@ public class MessageServiceImpl implements MessageService {
         for (ObjectId groupChatId : groupChats) {
             GroupChat groupChat = groupChatRepo.findById(groupChatId).orElseThrow(()->
                     new DocumentNotFoundException("Group " + groupChatId.toHexString() + " not found"));
-            groupChatsHM.put(groupChat.getId().toHexString(), getGroupChatMessages(userDetails, groupChat));
+            groupChatsHM.put(groupChat.getId().toHexString(), getGroupChatMessages(new ObjectId(userDetails.getUserId()), groupChat));
         }
 
         return MessagesResponse.builder()
@@ -250,24 +232,24 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public List<MessageDTO> getPrivateChatMessages(MyUserDetails userDetails, String targetUserName){
+    public List<MessageDTO> getPrivateChatMessages(ObjectId userId, String username, String targetUserName){
         ObjectId targetUserId = userService.findByUsername(targetUserName).getUserId();
-        String chatCollection = buildCollectionName(new ObjectId(userDetails.getUserId()), targetUserId, ChatType.PRIVATE);
-        return getCollectionMessages(userDetails, targetUserName, chatCollection);
+        String chatCollection = buildCollectionName(userId, targetUserId, ChatType.PRIVATE);
+        return getCollectionMessages(userId, username, targetUserName, chatCollection);
     }
 
     @Override
-    public List<MessageDTO> getBotChatMessages(MyUserDetails userDetails, String botName){
+    public List<MessageDTO> getBotChatMessages(ObjectId userId, String username, String botName){
         Bot bot = botService.getBotByName(botName);
-        String chatCollection = buildCollectionName(new ObjectId(userDetails.getUserId()), bot.getId(), ChatType.BOT);
-        return getCollectionMessages(userDetails, botName, chatCollection);
+        String chatCollection = buildCollectionName(userId, bot.getId(), ChatType.BOT);
+        return getCollectionMessages(userId, username, botName, chatCollection);
     }
 
     @Override
-    public List<MessageDTO> getGroupChatMessages(MyUserDetails userDetails, GroupChat groupChat){
+    public List<MessageDTO> getGroupChatMessages(ObjectId userId, GroupChat groupChat){
         List<MessageDTO> messageDTOS = new ArrayList<>();
 
-        if(!groupChat.getMemberIds().contains(new ObjectId(userDetails.getUserId()))){
+        if(!groupChat.getMemberIds().contains(userId)){
             return messageDTOS;
         }
 
@@ -286,8 +268,15 @@ public class MessageServiceImpl implements MessageService {
         return messageDTOS;
     }
 
-    private List<MessageDTO> getCollectionMessages(MyUserDetails userDetails, String chatName, String collectionName){
-        List<Message> messages = messageRepository.findAll(collectionName);
+    private List<MessageDTO> getCollectionMessages(ObjectId userId, String username, String chatName, String collectionName){
+        ReadStatus readStatus = readStatusService.getReadStatus(collectionName, userId);
+        List<Message> messages = null;
+        if (readStatus.getLastMessage() != null) {
+            messages = messageRepository.findAfter(readStatus.getLastMessage(), collectionName);
+        }else{
+            messages = messageRepository.findAll(collectionName);
+        }
+
         List<MessageDTO> messageDTOS = new ArrayList<>();
         for (Message message : messages) {
             MessageDTO messageDTO = MessageDTO.builder()
@@ -295,8 +284,8 @@ public class MessageServiceImpl implements MessageService {
                     .content(message.getContent())
                     .timestamp(message.getTimestamp())
                     .build();
-            if(message.getSenderId().toHexString().equals(userDetails.getUserId())){
-                messageDTO.setSenderName(userDetails.getUsername());
+            if(message.getSenderId().toHexString().equals(userId.toHexString())){
+                messageDTO.setSenderName(username);
             }else{
                 messageDTO.setSenderName(chatName);
             }
@@ -305,17 +294,6 @@ public class MessageServiceImpl implements MessageService {
         return messageDTOS;
     }
 
-
-    @Override
-    public MessageReceiveDTO buildMessageReceiveDTO(MessageSendDTO messageSendDTO, String senderName) {
-        Instant instant = Instant.now();
-        return MessageReceiveDTO.builder()
-                .timestamp(instant.toEpochMilli())
-                .senderName(senderName)
-                .content(messageSendDTO.getContent())
-                .type(messageSendDTO.getType())
-                .build();
-    }
 
     @Override
     public S3File findFileById(MyUserDetails userDetails, String chatName,
@@ -363,23 +341,31 @@ public class MessageServiceImpl implements MessageService {
         return s3Service.getChatFile(key);
     }
 
+
     @Override
-    public void updatePrivateReadStatus(ObjectId userId, String chatName) {
-        User targetUser = userService.findByUsername(chatName);
+    public void updateLastMessageStatus(ObjectId userId, ObjectId targetUserId) {
+        String collectionName = buildCollectionName(userId, targetUserId, ChatType.PRIVATE);
+        Optional<Message> lastMessage = messageRepository.findLastMessage(collectionName);
+        lastMessage.ifPresent(message -> readStatusService.updateLastMessage(collectionName, message.getId(), userId));
+    }
+
+    @Override
+    public void updatePrivateReadStatus(ObjectId userId, String targetUsername) {
+        User targetUser = userService.findByUsername(targetUsername);
         String collectionName = buildCollectionName(userId, targetUser.getUserId(), ChatType.PRIVATE);
-        readStatusService.updateReadStatus(collectionName, null, userId);
+        readStatusService.updateTimeRead(collectionName, userId);
     }
 
     @Override
-    public void updateGroupReadStatus(ObjectId userId, ObjectId groupChatId) {
-        String collectionName = buildCollectionName(groupChatId, null, ChatType.GROUP);
-        readStatusService.updateReadStatus(collectionName, null, userId);
+    public void updateGroupReadStatus(ObjectId userId, ObjectId groupId) {
+        String collectionName = buildCollectionName(groupId, null, ChatType.GROUP);
+        readStatusService.updateTimeRead(collectionName, userId);
     }
 
     @Override
-    public void updateBotReadStatus(ObjectId userId, String chatName) {
-        Bot bot = botService.getBotByName(chatName);
+    public void updateBotReadStatus(ObjectId userId, String botName) {
+        Bot bot = botService.getBotByName(botName);
         String collectionName = buildCollectionName(userId, bot.getId(), ChatType.BOT);
-        readStatusService.updateReadStatus(collectionName, null, userId);
+        readStatusService.updateTimeRead(collectionName, userId);
     }
 }

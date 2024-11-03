@@ -5,7 +5,7 @@ import com.example.chatsystem.dto.auth.AuthRequest;
 import com.example.chatsystem.dto.auth.JwtResponse;
 import com.example.chatsystem.dto.auth.SignupRequest;
 import com.example.chatsystem.dto.auth.SignupResponse;
-import com.example.chatsystem.dto.chat.AddPrivateChatRequest;
+import com.example.chatsystem.dto.chat.DeleteChatsRequest;
 import com.example.chatsystem.dto.chat.PrivateChatResponse;
 import com.example.chatsystem.dto.user.EditRequest;
 import com.example.chatsystem.exception.DocumentNotFoundException;
@@ -133,60 +133,40 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByUsername(username).orElseThrow(()->new DocumentNotFoundException("User " + username + " not found!"));
     }
 
+
+
     @Override
-    public PrivateChatResponse addPrivateChatToUser(ObjectId userId, AddPrivateChatRequest privateChatDTO) {
-        User user = findById(userId);
-        List<ObjectId> chats = user.getPrivateChats();
-        User targetUser = findByUsername(privateChatDTO.getUsername());
-        chats.add(targetUser.getUserId());
-        userRepository.update(user);
-        return PrivateChatResponse.builder()
-                .username(targetUser.getUsername())
-                .avatar(targetUser.getAvatar())
-                .type(ChatType.PRIVATE)
-                .build();
+    public void addPrivateChatToUser(ObjectId userId, ObjectId chatId) {
+        userRepository.addChat(userId, chatId, "privateChats");
     }
 
     @Override
-    public List<String> addPrivateChatToUser(User user,  ObjectId chatUserId) {
-        List<ObjectId> chats = user.getPrivateChats();
-        User targetUser = findById(chatUserId);
-        chats.add(targetUser.getUserId());
-        userRepository.update(user);
-        return chats.stream().map((id)->findById(id).getUsername()).toList();
+    public void removePrivateChatFromUser(ObjectId userId, ObjectId chatId) {
+        userRepository.removeChat(userId, chatId, "privateChats");
     }
 
     @Override
-    public void removePrivateChatFromUser(User user, ObjectId chatId) {
-        List<ObjectId> chats = user.getPrivateChats();
-        chats.remove(chatId);
-        userRepository.update(user);
-    }
-
-
-    @Override
-    public List<ObjectId> addGroupChatToUser(ObjectId userId, ObjectId chatId) {
-        return addGroupChatToUser(findById(userId), chatId);
+    public void addGroupChatToUser(ObjectId userId, ObjectId groupId) {
+        userRepository.addChat(userId, groupId, "groupChats");
     }
 
     @Override
-    public List<ObjectId> addGroupChatToUser(User user, ObjectId chatId) {
-        List<ObjectId> chats = user.getGroupChats();
-        chats.add(chatId);
-        userRepository.update(user);
-        return chats;
+    public void removeGroupChatFromUser(ObjectId userId, ObjectId groupId) {
+        userRepository.removeChat(userId, groupId, "groupChats");
     }
 
     @Override
-    public List<ObjectId> removeGroupChatFromUser(ObjectId userId, ObjectId chatId) {
-        return removeGroupChatFromUser(findById(userId), chatId);
+    public void addBotChatToUser(ObjectId userId, ObjectId botId){
+        userRepository.addChat(userId, botId, "botChats");
     }
 
     @Override
-    public List<ObjectId> removeGroupChatFromUser(User user, ObjectId chatId) {
-        List<ObjectId> chats = user.getGroupChats();
-        chats.remove(chatId);
-        userRepository.update(user);
-        return chats;
+    public void removeBotChatFromUser(ObjectId userId, ObjectId botId){
+        userRepository.removeChat(userId, botId, "botChats");
+    }
+
+    @Override
+    public void removeChatsFromUser(ObjectId userId, DeleteChatsRequest request) {
+        userRepository.removeChats(userId, request.getPrivateChats(), request.getGroupChats(), request.getBotChats());
     }
 }

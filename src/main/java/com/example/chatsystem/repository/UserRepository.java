@@ -18,4 +18,10 @@ public interface UserRepository {
     User update(User user);
 
     boolean delete(User user);
+
+    void addChat(ObjectId userId, ObjectId chatId, String set);
+
+    void removeChats(ObjectId userId, String[] privateChats, String[] groupChats, String[] botChats);
+
+    void removeChat(ObjectId userId, ObjectId chatId, String set);
 }

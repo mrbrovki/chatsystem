@@ -3,7 +3,9 @@ package com.example.chatsystem.repository;
 import com.example.chatsystem.model.Message;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
@@ -22,6 +24,13 @@ public class MessageRepositoryImpl implements MessageRepository{
     @Override
     public List<Message> findAll(String collectionName) {
         return mongoTemplate.findAll(Message.class, collectionName);
+    }
+
+    @Override
+    public List<Message> findAfter(String messageId, String collectionName){
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").gt(messageId));
+        return mongoTemplate.find(query, Message.class, collectionName);
     }
 
     @Override
@@ -52,5 +61,14 @@ public class MessageRepositoryImpl implements MessageRepository{
     @Override
     public void deleteAll(String collectionName) {
         mongoTemplate.remove(new Query(), collectionName);
+    }
+
+    @Override
+    public Optional<Message> findLastMessage(String collectionName) {
+        Query query = new Query();
+        query.with(Sort.by(Sort.Direction.DESC, "_id"));
+        query.limit(1);
+        Message lastMessage = mongoTemplate.findOne(query, Message.class, collectionName);
+        return Optional.ofNullable(lastMessage);
     }
 }

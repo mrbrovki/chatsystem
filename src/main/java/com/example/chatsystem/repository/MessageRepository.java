@@ -9,6 +9,8 @@ import java.util.Optional;
 public interface MessageRepository {
     List<Message> findAll(String collectionName);
 
+    List<Message> findAfter(String messageId, String collectionName);
+
     Optional<Message> findById(String collectionName, ObjectId id);
 
     Message save(String collectionName, Message message);
@@ -20,4 +22,6 @@ public interface MessageRepository {
     Message update(String collectionName, Message message);
 
     void deleteAll(String collectionName);
+
+    Optional<Message> findLastMessage(String collectionName);
 }
