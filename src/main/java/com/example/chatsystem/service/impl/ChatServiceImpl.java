@@ -33,18 +33,20 @@ public class ChatServiceImpl implements ChatService {
     private final BotService botService;
     private final ReadStatusService readStatusService;
     private final S3Service s3Service;
+    private final MessageService messageService;
 
     @Value("${aws.avatars.url}")
     private String avatarsUrl;
 
     @Autowired
-    public ChatServiceImpl(GroupChatRepo groupChatRepo, UserService userService, WebSocketService webSocketService, BotService botService, ReadStatusService readStatusService, S3Service s3Service) {
+    public ChatServiceImpl(GroupChatRepo groupChatRepo, UserService userService, WebSocketService webSocketService, BotService botService, ReadStatusService readStatusService, S3Service s3Service, MessageService messageService) {
         this.groupChatRepo = groupChatRepo;
         this.userService = userService;
         this.webSocketService = webSocketService;
         this.botService = botService;
         this.readStatusService = readStatusService;
         this.s3Service = s3Service;
+        this.messageService = messageService;
     }
 
     @Override
@@ -136,13 +138,13 @@ public class ChatServiceImpl implements ChatService {
 
     private void addUserToGroup(User user, GroupChat groupChat) {
         groupChat.getMemberIds().add(user.getUserId());
-        userService.addGroupChatToUser(user, groupChat.getId());
+        userService.addGroupChatToUser(user.getUserId(), groupChat.getId());
         webSocketService.subscribeUserToGroup(user.getUsername(), groupChat.getId());
     }
 
     private void removeUserFromGroup(User user, GroupChat groupChat){
         groupChat.getMemberIds().remove(user.getUserId());
-        userService.removeGroupChatFromUser(user, groupChat.getId());
+        userService.removeGroupChatFromUser(user.getUserId(), groupChat.getId());
         webSocketService.unsubscribeUserToGroup(user.getUsername(), groupChat.getId());
     }
 
@@ -193,7 +195,7 @@ public class ChatServiceImpl implements ChatService {
         //  add group chat to every member
         for (ObjectId memberId : memberIds) {
             User user = userService.findById(memberId);
-            userService.addGroupChatToUser(user, createdGroupChat.getId());
+            userService.addGroupChatToUser(user.getUserId(), createdGroupChat.getId());
             webSocketService.subscribeUserToGroup(user.getUsername(), createdGroupChat.getId());
         }
 
@@ -228,6 +230,18 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
+    public void deleteChats(ObjectId userId, DeleteChatsRequest deleteChatsRequest) {
+        if(deleteChatsRequest.isBoth()){
+            String[] privateChats = deleteChatsRequest.getPrivateChats();
+            for (String privateChat : privateChats) {
+                userService.removePrivateChatFromUser(new ObjectId(privateChat), userId);
+            }
+        }
+
+        userService.removeChatsFromUser(userId, deleteChatsRequest);
+    }
+
+    @Override
     public ArrayList<PrivateChatResponse> findPrivateChats(ObjectId userId) {
         ArrayList<PrivateChatResponse> chatDTOs = new ArrayList<>();
         User user;
@@ -257,23 +271,21 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public PrivateChatResponse addPrivateChat(ObjectId userId, AddPrivateChatRequest privateChatDTO) {
-        return userService.addPrivateChatToUser(userId, privateChatDTO);
+    public void addPrivateChat(ObjectId userId, AddChatRequest privateChatDTO) {
+        ObjectId chatId = userService.findByUsername(privateChatDTO.getChatName()).getUserId();
+        userService.addPrivateChatToUser(userId, chatId);
     }
 
     @Override
-    public PrivateChatResponse deletePrivateChat(ObjectId userId, String username, boolean isForBoth) {
+    public void deletePrivateChat(ObjectId userId, String username, boolean isBoth) {
         User user = userService.findById(userId);
         User targetUser = userService.findByUsername(username);
-        userService.removePrivateChatFromUser(user, targetUser.getUserId());
+        userService.removePrivateChatFromUser(user.getUserId(), targetUser.getUserId());
+        messageService.updateLastMessageStatus(userId, targetUser.getUserId());
 
-        if(isForBoth){
-            userService.removePrivateChatFromUser(targetUser, user.getUserId());
+        if(isBoth){
+            userService.removePrivateChatFromUser(targetUser.getUserId(), user.getUserId());
         }
-
-        return PrivateChatResponse.builder()
-                .username(username)
-                .build();
     }
 
     @Override

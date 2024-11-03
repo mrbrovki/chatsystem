@@ -9,6 +9,7 @@ import java.util.ArrayList;
 
 public interface ChatService {
     //  groupchat
+    ArrayList<GroupChatResponse> findGroupChats(ObjectId userId);
     GroupChat findById(ObjectId groupId);
     GroupChatResponse findById(ObjectId userId, ObjectId groupId);
     GroupChat updateGroupChat(GroupChat groupChat);
@@ -22,14 +23,21 @@ public interface ChatService {
     GroupChatResponse createGroupChat(ObjectId userId, CreateGroupRequest request);
     ArrayList<String> findGroupChatMemberNames(ObjectId chatId);
 
+    //void deleteChats(ObjectId userId, DeleteChatsRequest deleteChatsRequest, boolean forBoth);
+
     //  private
+    ArrayList<PrivateChatResponse> findPrivateChats(ObjectId userId);
     PrivateChatResponse findPrivateChatByName(ObjectId userId, String username);
-    PrivateChatResponse addPrivateChat(ObjectId userId, AddPrivateChatRequest privateChatDTO);
-    PrivateChatResponse deletePrivateChat(ObjectId userId, String username, boolean isForBoth);
+    void addPrivateChat(ObjectId userId, AddChatRequest privateChatDTO);
+    void deletePrivateChat(ObjectId userId, String username, boolean isBoth);
+
+    //  bot
+    ArrayList<BotChatResponse> findBotChats(ObjectId userId);
 
     //  all
     ChatResponseDTO findAllChats(ObjectId userId);
-    ArrayList<PrivateChatResponse> findPrivateChats(ObjectId userId);
-    ArrayList<GroupChatResponse> findGroupChats(ObjectId userId);
-    ArrayList<BotChatResponse> findBotChats(ObjectId userId);
+    void deleteChats(ObjectId userId, DeleteChatsRequest deleteChatsRequest);
+
+
+
 }

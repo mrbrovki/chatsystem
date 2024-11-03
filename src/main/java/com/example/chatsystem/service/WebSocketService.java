@@ -13,15 +13,15 @@ public interface WebSocketService {
 
     void sendGroupMessage(String groupId, MessageReceiveDTO message);
 
-    void handleMessageToBot(MessageSendDTO messageSendDTO, ObjectId senderId);
+    void handleMessageToBot(MessageSendDTO messageSendDTO, ObjectId senderId, String senderName);
 
-    void handlePrivateMessage(MessageSendDTO messageSendDTO, ObjectId senderId);
+    void handlePrivateMessage(MessageSendDTO messageSendDTO, ObjectId senderId, String senderName);
 
-    void handleGroupMessage(MessageSendDTO messageSendDTO, ObjectId senderId);
+    void handleGroupMessage(MessageSendDTO messageSendDTO, ObjectId senderId, String senderName);
 
-    void handleFileToBot(byte[] payload, MessageType messageType, ObjectId senderId, String receiverName);
-    void handleFileToPrivate(byte[] payload, MessageType messageType, ObjectId senderId, String receiverName);
-    void handleFileToGroup(byte[] payload, MessageType messageType, ObjectId senderId, String receiverName);
+    void handleFileToBot(byte[] payload, MessageType messageType, ObjectId senderId, String senderName, String receiverName);
+    void handleFileToPrivate(byte[] payload, MessageType messageType, ObjectId senderId, String senderName, String receiverName);
+    void handleFileToGroup(byte[] payload, MessageType messageType, ObjectId senderId, String senderName, String receiverName);
 
     void subscribeUserToGroup(String username, ObjectId groupId);
 

@@ -1,6 +1,5 @@
 package com.example.chatsystem.dto.chat;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,7 +9,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class AddChatRequest {
-    @NotBlank
-    private String chatName;
+public class DeleteChatsRequest {
+    String[] privateChats;
+    String[] groupChats;
+    String[] botChats;
+    boolean both;
 }
