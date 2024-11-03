@@ -3,9 +3,14 @@ package com.example.chatsystem.repository;
 import com.example.chatsystem.model.ReadStatus;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
+import java.util.Map;
 import java.util.Optional;
+
+import static org.springframework.data.mongodb.core.query.Criteria.where;
 
 @Repository
 public class ReadStatusRepositoryImpl implements ReadStatusRepository {
@@ -22,7 +27,21 @@ public class ReadStatusRepositoryImpl implements ReadStatusRepository {
     }
 
     @Override
-    public Optional<ReadStatus> findById(ObjectId id, String collectionName) {
-        return Optional.ofNullable(mongoTemplate.findById(id, ReadStatus.class, collectionName));
+    public Optional<ReadStatus> findById(ObjectId userId, String collectionName) {
+        return Optional.ofNullable(mongoTemplate.findById(userId, ReadStatus.class, collectionName));
+    }
+
+    @Override
+    public boolean collectionExists(String collectionName){
+        return mongoTemplate.collectionExists(collectionName);
+    }
+
+    @Override
+    public void upsert(ObjectId userId, Map<String, Object> fieldsToUpdate, String collectionName){
+        Query query = new Query();
+        query.addCriteria(where("_id").is(userId));
+        Update update = new Update();
+        fieldsToUpdate.forEach(update::set);
+        mongoTemplate.upsert(query, update, ReadStatus.class, collectionName);
     }
 }

@@ -15,7 +15,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Builder
 public class ReadStatus {
     @Id
-    private ObjectId id;
-    private String lastReadMessage;
+    private ObjectId _id;
+    private String lastMessage;
     private long lastReadTime;
 }

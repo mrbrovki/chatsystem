@@ -1,7 +1,5 @@
 package com.example.chatsystem.service.impl;
 
-import com.example.chatsystem.exception.DocumentNotFoundException;
-import com.example.chatsystem.model.Message;
 import com.example.chatsystem.model.ReadStatus;
 import com.example.chatsystem.repository.ReadStatusRepository;
 import com.example.chatsystem.service.ReadStatusService;
@@ -9,6 +7,7 @@ import org.bson.types.ObjectId;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.HashMap;
 
 @Service
 public class ReadStatusServiceImpl implements ReadStatusService {
@@ -19,20 +18,43 @@ public class ReadStatusServiceImpl implements ReadStatusService {
     }
 
     @Override
-    public ReadStatus getReadStatus(String collectionName, ObjectId userId){
+    public void persist(ObjectId userId, String collectionName) {
         collectionName = "status_" + collectionName;
-        return readStatusRepository.findById(userId, collectionName)
-                .orElse(ReadStatus.builder()
-                        .id(userId)
-                        .build());
+        HashMap<String, Object> updates = new HashMap<>();
+        updates.put("lastReadTime", Instant.now().toEpochMilli());
+        readStatusRepository.upsert(userId, updates, collectionName);
     }
 
     @Override
-    public ReadStatus updateReadStatus(String collectionName, Message message, ObjectId userId){
+    public ReadStatus getReadStatus(String collectionName, ObjectId userId){
         collectionName = "status_" + collectionName;
-        ReadStatus readStatus = getReadStatus(collectionName, userId);
-        //readStatus.setLastReadMessage(message.getId());
-        readStatus.setLastReadTime(Instant.now().toEpochMilli());
-        return  readStatusRepository.save(readStatus, collectionName);
+        return readStatusRepository.findById(userId, collectionName).orElse(
+                ReadStatus.builder()
+                        .lastReadTime(-1)
+                        .build()
+        );
     }
+
+    @Override
+    public void updateTimeRead(String collectionName, ObjectId userId){
+        collectionName = "status_" + collectionName;
+
+        if(readStatusRepository.collectionExists(collectionName)){
+            HashMap<String, Object> updates  = new HashMap<>();
+            updates.put("lastReadTime", Instant.now().toEpochMilli());
+            readStatusRepository.upsert(userId, updates, collectionName);
+        }
+    }
+
+    @Override
+    public void updateLastMessage(String collectionName, String messageId, ObjectId userId){
+        collectionName = "status_" + collectionName;
+
+        if(readStatusRepository.collectionExists(collectionName)){
+            HashMap<String, Object> updates  = new HashMap<>();
+            updates.put("lastMessage", messageId);
+            readStatusRepository.upsert(userId, updates, collectionName);
+        }
+    }
+
 }

@@ -22,7 +22,5 @@ public class Message {
 
     private ObjectId senderId;
 
-    private ObjectId receiverId;
-
     private MessageType type;
 }

@@ -7,6 +7,7 @@ import lombok.Getter;
 
 @Getter
 public enum MessageType {
+    SVG("image/svg+xml"),
     JOIN("join"),
     LEAVE("leave"),
     IMAGE_JPEG(MediaType.IMAGE_JPEG_VALUE),
