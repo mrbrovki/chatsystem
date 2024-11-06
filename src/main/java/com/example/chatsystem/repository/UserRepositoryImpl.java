@@ -10,6 +10,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.springframework.data.mongodb.core.query.Criteria.where;
@@ -47,8 +48,12 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public User update(User user) {
-        return mongoTemplate.save(user);
+    public void update(ObjectId userId, Map<String, Object> fieldsToUpdate){
+        Query query = new Query();
+        query.addCriteria(where("_id").is(userId));
+        Update update = new Update();
+        fieldsToUpdate.forEach(update::set);
+        mongoTemplate.upsert(query, update, User.class);
     }
 
     @Override

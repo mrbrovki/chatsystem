@@ -64,7 +64,7 @@ public class AuthenticationController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("demo")
+    @PostMapping("/demo")
     public ResponseEntity<AuthResponse> demo(HttpServletResponse response, HttpServletRequest httpServletRequest){
         JwtResponse jwtResponse = authService.demo();
 

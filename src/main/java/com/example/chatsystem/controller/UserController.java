@@ -73,7 +73,7 @@ public class UserController {
             throw new RuntimeException(e);
         }
 
-        JwtResponse jwtResponse = userService.edit(new ObjectId(userDetails.getUserId()), request);
+        JwtResponse jwtResponse = userService.edit(new ObjectId(userDetails.getUserId()), userDetails.getUsername(), request);
 
         CookieUtils.addCookie(response, "jwt", jwtResponse.getAccessToken(),
                 3600 * 24 * 7, httpServletRequest.getServerName());

@@ -4,6 +4,7 @@ import com.example.chatsystem.model.User;
 import org.bson.types.ObjectId;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface UserRepository {
@@ -15,7 +16,7 @@ public interface UserRepository {
 
     User save(User user);
 
-    User update(User user);
+    void update(ObjectId userId, Map<String, Object> fieldsToUpdate);
 
     boolean delete(User user);
 

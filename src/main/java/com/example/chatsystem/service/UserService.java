@@ -14,7 +14,7 @@ import java.util.List;
 public interface UserService {
     SignupResponse create(SignupRequest signupDTO);
     boolean delete(ObjectId id);
-    JwtResponse edit(ObjectId id, EditRequest editUserDTO);
+    JwtResponse edit(ObjectId id, String username, EditRequest editUserDTO);
 
     List<PrivateChatResponse> findAll();
     User findByUsername(String username);

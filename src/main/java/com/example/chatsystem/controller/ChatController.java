@@ -45,6 +45,44 @@ public class ChatController {
         chatService.deleteChats(new ObjectId(userDetails.getUserId()), request);
     }
 
+
+    //  PRIVATE
+    @GetMapping("/private")
+    public ResponseEntity<List<PrivateChatResponse>> findPrivateChats(@AuthenticationPrincipal MyUserDetails userDetails) {
+        ArrayList<PrivateChatResponse> chatsDTOs = chatService.findPrivateChats(new ObjectId(userDetails.getUserId()));
+        return ResponseEntity.ok(chatsDTOs);
+    }
+
+    @PostMapping("/private/add")
+    public ResponseEntity<Void> addPrivateChat(@AuthenticationPrincipal MyUserDetails userDetails,
+                                               @Valid  @RequestBody AddChatRequest addChatRequest) {
+        chatService.addPrivateChat(new ObjectId(userDetails.getUserId()), addChatRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @DeleteMapping("/private/delete")
+    public ResponseEntity<Void> deletePrivateChat(@AuthenticationPrincipal MyUserDetails userDetails,
+                                                  @RequestParam String username,
+                                                  @RequestParam("isBoth") boolean isBoth) {
+        chatService.deletePrivateChat(
+                new ObjectId(userDetails.getUserId()), username, isBoth);
+        return  ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/private/{username}")
+    public ResponseEntity<PrivateChatResponse> findPrivateChatByName(@AuthenticationPrincipal MyUserDetails userDetails,
+                                                                     @PathVariable String username) {
+        return ResponseEntity.ok(chatService.findPrivateChatByName(new ObjectId(userDetails.getUserId()), username));
+    }
+
+
+    //  GROUP
+    @GetMapping("/groups")
+    public ResponseEntity<List<GroupChatResponse>> findGroupChats(@AuthenticationPrincipal MyUserDetails userDetails) {
+        ArrayList<GroupChatResponse> chatsDTOs = chatService.findGroupChats(new ObjectId(userDetails.getUserId()));
+        return ResponseEntity.ok(chatsDTOs);
+    }
+
     @PostMapping(value = "/groups", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<GroupChatResponse> createGroupChat(@AuthenticationPrincipal MyUserDetails userDetails,
                                                              @RequestPart("json") String json,
@@ -65,39 +103,6 @@ public class ChatController {
 
         GroupChatResponse createdGroupChat = chatService.createGroupChat(new ObjectId(userDetails.getUserId()), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdGroupChat);
-    }
-
-    @GetMapping("/private")
-    public ResponseEntity<List<PrivateChatResponse>> findPrivateChats(@AuthenticationPrincipal MyUserDetails userDetails) {
-        ArrayList<PrivateChatResponse> chatsDTOs = chatService.findPrivateChats(new ObjectId(userDetails.getUserId()));
-        return ResponseEntity.ok(chatsDTOs);
-    }
-
-    @GetMapping("/private/{username}")
-    public ResponseEntity<PrivateChatResponse> findPrivateChatByName(@AuthenticationPrincipal MyUserDetails userDetails,
-                                                                     @PathVariable String username) {
-        return ResponseEntity.ok(chatService.findPrivateChatByName(new ObjectId(userDetails.getUserId()), username));
-    }
-
-    @PostMapping("/private/add")
-    public ResponseEntity<Void> addPrivateChat(@AuthenticationPrincipal MyUserDetails userDetails,
-                                                       @Valid  @RequestBody AddChatRequest addChatRequest) {
-        chatService.addPrivateChat(new ObjectId(userDetails.getUserId()), addChatRequest);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
-    }
-    @DeleteMapping("private/delete")
-    public ResponseEntity<Void> deletePrivateChat(@AuthenticationPrincipal MyUserDetails userDetails,
-                                                                       @RequestParam String username,
-                                                                       @RequestParam("isBoth") boolean isBoth) {
-        chatService.deletePrivateChat(
-                new ObjectId(userDetails.getUserId()), username, isBoth);
-        return  ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/groups")
-    public ResponseEntity<List<GroupChatResponse>> findGroupChats(@AuthenticationPrincipal MyUserDetails userDetails) {
-        ArrayList<GroupChatResponse> chatsDTOs = chatService.findGroupChats(new ObjectId(userDetails.getUserId()));
-        return ResponseEntity.ok(chatsDTOs);
     }
 
     @GetMapping("/groups/{id}")
@@ -162,6 +167,8 @@ public class ChatController {
         return ResponseEntity.noContent().build();
     }
 
+
+    //  BOT
     @GetMapping("/bots")
     public ResponseEntity<List<BotChatResponse>> findBots(@AuthenticationPrincipal MyUserDetails userDetails) {
         ArrayList<BotChatResponse> bots = chatService.findBotChats(new ObjectId(userDetails.getUserId()));

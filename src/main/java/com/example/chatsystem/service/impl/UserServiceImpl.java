@@ -1,7 +1,5 @@
 package com.example.chatsystem.service.impl;
 
-import com.amazonaws.services.s3.model.PutObjectResult;
-import com.example.chatsystem.dto.auth.AuthRequest;
 import com.example.chatsystem.dto.auth.JwtResponse;
 import com.example.chatsystem.dto.auth.SignupRequest;
 import com.example.chatsystem.dto.auth.SignupResponse;
@@ -12,7 +10,8 @@ import com.example.chatsystem.exception.DocumentNotFoundException;
 import com.example.chatsystem.model.ChatType;
 import com.example.chatsystem.model.User;
 import com.example.chatsystem.repository.UserRepository;
-import com.example.chatsystem.security.AuthService;
+import com.example.chatsystem.security.JwtService;
+import com.example.chatsystem.security.MyUserDetails;
 import com.example.chatsystem.service.S3Service;
 import com.example.chatsystem.service.UserService;
 import org.bson.types.ObjectId;
@@ -23,26 +22,24 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final S3Service s3Service;
-    private final AuthService authService;
+    private final JwtService jwtService;
 
     @Value("${aws.avatars.url}")
     private String avatarsUrl;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, S3Service s3Service, AuthService authService) {
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, S3Service s3Service, JwtService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.s3Service = s3Service;
-        this.authService = authService;
+        this.jwtService = jwtService;
     }
 
     @Override
@@ -75,32 +72,44 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public JwtResponse edit(ObjectId userId, EditRequest editRequest) {
-        User user = findById(userId);
-        String newPassword = editRequest.getPassword();
+    public JwtResponse edit(ObjectId userId, String username, EditRequest editRequest) {
+        User user = userRepository.findByUsername(editRequest.getUsername())
+                .orElse(User.builder().userId(userId).build());
 
+        if(!userId.equals(user.getUserId())){
+            throw new RuntimeException("Username already exists!");
+        }
+
+        HashMap<String, Object> updates = new HashMap<>();
+
+        String newPassword = editRequest.getPassword();
         if(!newPassword.isBlank()){
-            user.setHashedPassword(passwordEncoder.encode(newPassword));
+            updates.put("hashedPassword", passwordEncoder.encode(newPassword));
+        }
+
+        if(!username.equals(editRequest.getUsername())){
+            updates.put("username", editRequest.getUsername());
         }
 
         MultipartFile avatar = editRequest.getAvatar();
         try {
             if(avatar.getSize() != 0) {
-                PutObjectResult result = s3Service.uploadAvatar(avatar.getInputStream(), user.getUsername(), avatar.getContentType());
-                user.setAvatar(avatarsUrl + user.getUsername());
+                s3Service.deleteAvatar(username);
+                s3Service.uploadAvatar(avatar.getInputStream(), editRequest.getUsername(), avatar.getContentType());
+                updates.put("avatar", avatarsUrl + editRequest.getUsername());
+            }else{
+                s3Service.renameAvatar(username, editRequest.getUsername());
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
-        userRepository.save(user);
+        userRepository.update(userId, updates);
 
-        AuthRequest authRequest = AuthRequest.builder()
-                .username(user.getUsername())
-                .password(editRequest.getPassword())
-                .build();
+        MyUserDetails userDetails = new MyUserDetails(editRequest.getUsername(), "", new HashSet<>(),
+                userId.toHexString(), avatarsUrl + editRequest.getUsername());
 
-        return authService.authenticate(authRequest);
+        return jwtService.generateToken(userDetails);
     }
 
     @Override
