@@ -15,4 +15,8 @@ public interface S3Service {
     PutObjectResult uploadChatFile(InputStream inputStream, MessageType messageType, String key);
 
     S3File getChatFile(String key);
+
+    void deleteAvatar(String key);
+
+    void renameAvatar(String oldKey, String newKey);
 }

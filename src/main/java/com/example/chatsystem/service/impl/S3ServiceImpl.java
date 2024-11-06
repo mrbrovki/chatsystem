@@ -60,4 +60,19 @@ public class S3ServiceImpl implements S3Service {
         }
         return file;
     }
+
+    @Override
+    public void deleteAvatar(String key){
+        DeleteObjectRequest deleteObjectRequest = new DeleteObjectRequest(avatarsBucket, key);
+        amazonS3.deleteObject(deleteObjectRequest);
+    }
+
+    @Override
+    public void renameAvatar(String oldKey, String newKey) {
+        if(amazonS3.doesObjectExist(avatarsBucket, oldKey)){
+            CopyObjectRequest copyObjRequest = new CopyObjectRequest(avatarsBucket, oldKey, avatarsBucket, newKey);
+            amazonS3.copyObject(copyObjRequest);
+            amazonS3.deleteObject(avatarsBucket, oldKey);
+        }
+    }
 }
