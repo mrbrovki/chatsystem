@@ -94,7 +94,7 @@ public class ChatServiceImpl implements ChatService {
         if (isHost(groupChat, userId)) {
             List<ObjectId> memberIds = groupChat.getMemberIds();
             for (ObjectId memberId : memberIds) {
-                webSocketService.unsubscribeUserToGroup(userService.findById(memberId).getUsername(), chatId);
+                webSocketService.unsubscribeUserFromGroup(userService.findById(memberId).getUsername(), chatId);
             }
             groupChatRepo.delete(groupChat);
         }
@@ -134,6 +134,8 @@ public class ChatServiceImpl implements ChatService {
         GroupChat groupChat = findById(chatId);
         User user = userService.findById(userId);
         removeUserFromGroup(user, groupChat);
+        String collectionName = buildCollectionName(chatId, null, ChatType.GROUP);
+        messageService.updateLastMessageStatus(userId, collectionName);
     }
 
     private void addUserToGroup(User user, GroupChat groupChat) {
@@ -144,8 +146,10 @@ public class ChatServiceImpl implements ChatService {
 
     private void removeUserFromGroup(User user, GroupChat groupChat){
         groupChat.getMemberIds().remove(user.getUserId());
+        groupChatRepo.save(groupChat);
+
         userService.removeGroupChatFromUser(user.getUserId(), groupChat.getId());
-        webSocketService.unsubscribeUserToGroup(user.getUsername(), groupChat.getId());
+        webSocketService.unsubscribeUserFromGroup(user.getUsername(), groupChat.getId());
     }
 
     @Override
@@ -231,14 +235,17 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public void deleteChats(ObjectId userId, DeleteChatsRequest deleteChatsRequest) {
-        if(deleteChatsRequest.isBoth()){
-            String[] privateChats = deleteChatsRequest.getPrivateChats();
-            for (String privateChat : privateChats) {
-                userService.removePrivateChatFromUser(new ObjectId(privateChat), userId);
-            }
+        for(String privateChat: deleteChatsRequest.getPrivateChats()){
+            deletePrivateChat(userId, privateChat, deleteChatsRequest.isBoth());
         }
 
-        userService.removeChatsFromUser(userId, deleteChatsRequest);
+        for (String groupChat: deleteChatsRequest.getGroupChats()) {
+            removeUserFromGroup(userId, new ObjectId(groupChat));
+        }
+
+        for (String botChat: deleteChatsRequest.getBotChats()) {
+            deleteBotChat(userId, botChat);
+        }
     }
 
     @Override
@@ -278,13 +285,14 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public void deletePrivateChat(ObjectId userId, String username, boolean isBoth) {
-        User user = userService.findById(userId);
         User targetUser = userService.findByUsername(username);
-        userService.removePrivateChatFromUser(user.getUserId(), targetUser.getUserId());
-        messageService.updateLastMessageStatus(userId, targetUser.getUserId());
+        userService.removePrivateChatFromUser(userId, targetUser.getUserId());
+        String collectionName = buildCollectionName(userId, targetUser.getUserId(), ChatType.PRIVATE);
+        messageService.updateLastMessageStatus(userId, collectionName);
 
         if(isBoth){
-            userService.removePrivateChatFromUser(targetUser.getUserId(), user.getUserId());
+            userService.removePrivateChatFromUser(targetUser.getUserId(), userId);
+            messageService.updateLastMessageStatus(targetUser.getUserId(), collectionName);
         }
     }
 
@@ -302,6 +310,14 @@ public class ChatServiceImpl implements ChatService {
         User user = userService.findById(userId);
         setUserBotChats(botChatDTOs, user);
         return botChatDTOs;
+    }
+
+    @Override
+    public void deleteBotChat(ObjectId userId, String botName) {
+        ObjectId botId = botService.getBotByName(botName).getId();
+        userService.removeBotChatFromUser(userId, botId);
+        String collectionName = buildCollectionName(userId, botId, ChatType.BOT);
+        messageService.updateLastMessageStatus(userId, collectionName);
     }
 
     @Override

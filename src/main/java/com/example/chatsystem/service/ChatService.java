@@ -33,11 +33,9 @@ public interface ChatService {
 
     //  bot
     ArrayList<BotChatResponse> findBotChats(ObjectId userId);
+    void deleteBotChat(ObjectId userId, String botName);
 
     //  all
     ChatResponseDTO findAllChats(ObjectId userId);
     void deleteChats(ObjectId userId, DeleteChatsRequest deleteChatsRequest);
-
-
-
 }

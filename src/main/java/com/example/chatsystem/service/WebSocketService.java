@@ -25,5 +25,5 @@ public interface WebSocketService {
 
     void subscribeUserToGroup(String username, ObjectId groupId);
 
-    void unsubscribeUserToGroup(String username, ObjectId groupId);
+    void unsubscribeUserFromGroup(String username, ObjectId groupId);
 }

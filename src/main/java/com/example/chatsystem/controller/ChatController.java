@@ -174,4 +174,10 @@ public class ChatController {
         ArrayList<BotChatResponse> bots = chatService.findBotChats(new ObjectId(userDetails.getUserId()));
         return ResponseEntity.ok(bots);
     }
+
+    @DeleteMapping("/bots/delete")
+    public ResponseEntity<Void> deleteBot(@AuthenticationPrincipal MyUserDetails userDetails, @RequestParam String botName) {
+        chatService.deleteBotChat(new ObjectId(userDetails.getUserId()), botName);
+        return ResponseEntity.noContent().build();
+    }
 }

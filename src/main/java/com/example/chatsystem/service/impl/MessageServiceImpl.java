@@ -343,8 +343,7 @@ public class MessageServiceImpl implements MessageService {
 
 
     @Override
-    public void updateLastMessageStatus(ObjectId userId, ObjectId targetUserId) {
-        String collectionName = buildCollectionName(userId, targetUserId, ChatType.PRIVATE);
+    public void updateLastMessageStatus(ObjectId userId, String collectionName) {
         Optional<Message> lastMessage = messageRepository.findLastMessage(collectionName);
         lastMessage.ifPresent(message -> readStatusService.updateLastMessage(collectionName, message.getId(), userId));
     }

@@ -176,7 +176,7 @@ public class WebSocketServiceImpl implements WebSocketService {
     }
 
     @Override
-    public void unsubscribeUserToGroup(String username, ObjectId groupId) {
+    public void unsubscribeUserFromGroup(String username, ObjectId groupId) {
         MessageReceiveDTO message = MessageReceiveDTO.builder()
                 .content(groupId.toHexString())
                 .type(MessageType.LEAVE)
