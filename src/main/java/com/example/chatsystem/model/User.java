@@ -4,11 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.List;
+import java.util.UUID;
 
 @Document(collection = "users")
 @Data
@@ -17,12 +18,13 @@ import java.util.List;
 @Builder
 public class User {
     @Id
-    private ObjectId userId;
+    @Field("_id")
+    private UUID id;
     private String username;
     private String email;
     private String hashedPassword;
-    private List<ObjectId> groupChats;
-    private List<ObjectId> privateChats;
-    private List<ObjectId> botChats;
+    private List<UUID> groupChats;
+    private List<UUID> privateChats;
+    private List<UUID> botChats;
     private String avatar;
 }

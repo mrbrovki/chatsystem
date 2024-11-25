@@ -10,6 +10,7 @@ public enum MessageType {
     SVG("image/svg+xml"),
     JOIN("join"),
     LEAVE("leave"),
+    STATE("state"),
     IMAGE_JPEG(MediaType.IMAGE_JPEG_VALUE),
     IMAGE_PNG(MediaType.IMAGE_PNG_VALUE),
     IMAGE_GIF(MediaType.IMAGE_GIF_VALUE),

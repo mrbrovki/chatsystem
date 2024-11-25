@@ -1,7 +1,7 @@
 package com.example.chatsystem.repository;
 
 import com.example.chatsystem.model.Message;
-import org.bson.types.ObjectId;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -34,7 +34,7 @@ public class MessageRepositoryImpl implements MessageRepository{
     }
 
     @Override
-    public Optional<Message> findById(String collectionName, ObjectId id) {
+    public Optional<Message> findById(String collectionName, String id) {
         return Optional.ofNullable(mongoTemplate.findById(id, Message.class, collectionName));
     }
 

@@ -4,8 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.bson.types.ObjectId;
+
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Field;
+
+import java.util.UUID;
 
 @Data
 @AllArgsConstructor
@@ -13,7 +16,8 @@ import org.springframework.data.annotation.Id;
 @Builder
 public class Bot {
     @Id
-    private ObjectId id;
+    @Field("_id")
+    private UUID id;
     private String name;
     private String info;
     private String avatar;

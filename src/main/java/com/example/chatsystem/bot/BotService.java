@@ -7,7 +7,6 @@ import com.example.chatsystem.dto.websocket.MessageSendDTO;
 import com.example.chatsystem.exception.DocumentNotFoundException;
 import com.example.chatsystem.model.MessageType;
 import com.example.chatsystem.repository.BotRepository;
-import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Example;
@@ -43,8 +42,8 @@ public class BotService {
         return botRepository.save(bot);
     }
 
-    public Bot getBotById(ObjectId id) {
-        return botRepository.findById(id).orElseThrow(()->new DocumentNotFoundException("Bot " + id.toHexString() + " not found!"));
+    public Bot getBotById(UUID id) {
+        return botRepository.findById(id).orElseThrow(()->new DocumentNotFoundException("Bot " + id.toString() + " not found!"));
     }
 
     public Bot getBotByName(String name) {
@@ -67,19 +66,19 @@ public class BotService {
         return responseDTOMono.block();
     }
 
-    public MessageSendDTO handleMessage(List<MessageDTO> messageDTOs, MessageSendDTO messageSendDTO, String senderName){
-        String botName = messageSendDTO.getReceiverName();
+    public MessageSendDTO handleMessage(List<MessageDTO> messageDTOs, MessageSendDTO messageSendDTO, UUID senderId){
+        UUID botId = messageSendDTO.getReceiverId();
 
         List<Message> messages = new ArrayList<>();
 
         //  add training message
-        Bot bot = getBotByName(botName);
+        Bot bot = getBotById(botId);
         messages.add(Message.builder().content(bot.getInfo()).role("user").build());
 
         messageDTOs.forEach(element -> {
             Message message = new Message();
             message.setContent(element.getContent());
-            if(bot.getName().equals(element.getSenderName())){
+            if(botId.equals(element.getSenderId())){
                 message.setRole("assistant");
             }else{
                 message.setRole("user");
@@ -98,7 +97,7 @@ public class BotService {
 
         return MessageSendDTO.builder()
                 .content(messageContent)
-                .receiverName(senderName)
+                .receiverId(senderId)
                 .type(MessageType.TEXT)
                 .build();
     }

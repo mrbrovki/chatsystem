@@ -4,10 +4,10 @@ import com.example.chatsystem.bot.BotService;
 import com.example.chatsystem.dto.message.MessageDTO;
 import com.example.chatsystem.dto.websocket.MessageReceiveDTO;
 import com.example.chatsystem.dto.websocket.MessageSendDTO;
+import com.example.chatsystem.model.ChatState;
 import com.example.chatsystem.model.MessageType;
 import com.example.chatsystem.service.MessageService;
 import com.example.chatsystem.service.WebSocketService;
-import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class WebSocketServiceImpl implements WebSocketService {
@@ -34,79 +35,83 @@ public class WebSocketServiceImpl implements WebSocketService {
     }
 
     @Override
-    public void sendPrivateMessage(String receiverName, MessageReceiveDTO message) {
-        messagingTemplate.convertAndSendToUser(receiverName, "/private/messages", message);
+    public void sendPrivateMessage(UUID receiverId, MessageReceiveDTO message) {
+        messagingTemplate.convertAndSendToUser(receiverId.toString(), "/private/messages", message);
     }
 
     @Override
-    public void sendBotMessage(String receiverName, MessageReceiveDTO message) {
-        messagingTemplate.convertAndSendToUser(receiverName, "/bot/messages", message);
+    public void sendBotMessage(UUID receiverId, MessageReceiveDTO message) {
+        messagingTemplate.convertAndSendToUser(receiverId.toString(), "/bot/messages", message);
     }
 
     @Override
-    public void sendGroupMessage(String groupId, MessageReceiveDTO message) {
-        messagingTemplate.convertAndSend("/group/" + groupId + "/messages", message);
+    public void sendGroupMessage(UUID groupId, MessageReceiveDTO message) {
+        messagingTemplate.convertAndSend("/group/" + groupId.toString() + "/messages", message);
     }
 
     @Override
-    public void handleMessageToBot(MessageSendDTO messageSendDTO, ObjectId senderId, String senderName) {
-        String botName = messageSendDTO.getReceiverName();
-        ObjectId botId = botService.getBotByName(botName).getId();
+    public void handleMessageToBot(MessageSendDTO messageSendDTO, UUID senderId) {
+        UUID botId = messageSendDTO.getReceiverId();
+
+        MessageReceiveDTO typingMessage = MessageReceiveDTO.builder()
+                .content(ChatState.TYPING.name())
+                .type(MessageType.STATE)
+                .senderId(botId)
+                .build();
+        sendBotMessage(senderId, typingMessage);
 
         long timestamp = Instant.now().toEpochMilli();
-        MessageReceiveDTO userMessageReceiveDTO = buildMessageReceiveDTO(messageSendDTO, senderName, timestamp);
+        MessageReceiveDTO userMessageReceiveDTO = buildMessageReceiveDTO(messageSendDTO, senderId, timestamp);
 
         //  persist user message
         messageService.persistBotMessage(userMessageReceiveDTO, senderId, botId);
 
         //  pull messages
-        List<MessageDTO> messageDTOs = messageService.getBotChatMessages(senderId, senderName, botName);
+        List<MessageDTO> messageDTOs = messageService.getBotChatMessages(senderId, botId);
 
         //  prompt bot
-        MessageSendDTO botSendDTO = botService.handleMessage(messageDTOs, messageSendDTO, senderName);
+        MessageSendDTO botSendDTO = botService.handleMessage(messageDTOs, messageSendDTO, senderId);
 
         //  persist bot message
-        MessageReceiveDTO botMessageReceiveDTO = buildMessageReceiveDTO(botSendDTO, botName, timestamp);
+        MessageReceiveDTO botMessageReceiveDTO = buildMessageReceiveDTO(botSendDTO, botId, timestamp);
         messageService.persistBotMessage(botMessageReceiveDTO, botId, senderId);
 
-        sendBotMessage(senderName, botMessageReceiveDTO);
+        sendBotMessage(senderId, botMessageReceiveDTO);
     }
 
     @Override
-    public void handlePrivateMessage(MessageSendDTO messageSendDTO, ObjectId senderId, String senderName) {
-        String receiverName = messageSendDTO.getReceiverName();
+    public void handlePrivateMessage(MessageSendDTO messageSendDTO, UUID senderId) {
+        UUID receiverId = messageSendDTO.getReceiverId();
 
         long timestamp = Instant.now().toEpochMilli();
-        MessageReceiveDTO messageReceiveDTO = buildMessageReceiveDTO(messageSendDTO, senderName, timestamp);
+        MessageReceiveDTO messageReceiveDTO = buildMessageReceiveDTO(messageSendDTO, senderId, timestamp);
 
         //  persist
-        messageService.persistPrivateMessage(messageReceiveDTO, senderId, receiverName);
+        messageService.persistPrivateMessage(messageReceiveDTO, senderId, receiverId);
 
-        sendPrivateMessage(receiverName, messageReceiveDTO);
+        sendPrivateMessage(receiverId, messageReceiveDTO);
     }
 
     @Override
-    public void handleGroupMessage(MessageSendDTO messageSendDTO, ObjectId senderId, String senderName) {
-        ObjectId groupId = new ObjectId(messageSendDTO.getReceiverName());
+    public void handleGroupMessage(MessageSendDTO messageSendDTO, UUID senderId) {
+        UUID groupId = messageSendDTO.getReceiverId();
 
         long timestamp = Instant.now().toEpochMilli();
-        MessageReceiveDTO messageReceiveDTO = buildMessageReceiveDTO(messageSendDTO, senderName, timestamp);
+        MessageReceiveDTO messageReceiveDTO = buildMessageReceiveDTO(messageSendDTO, senderId, timestamp);
 
         //  persist
         messageService.persistGroupMessage(messageReceiveDTO, senderId, groupId);
 
-        sendGroupMessage(messageSendDTO.getReceiverName(), messageReceiveDTO);
+        sendGroupMessage(messageSendDTO.getReceiverId(), messageReceiveDTO);
     }
 
     @Override
-    public void handleFileToBot(byte[] payload, MessageType messageType, ObjectId senderId,
-                                String senderName, String botName){
-        ObjectId botId = botService.getBotByName(botName).getId();
+    public void handleFileToBot(byte[] payload, MessageType messageType, UUID senderId, UUID botId){
         InputStream inputStream = new ByteArrayInputStream(payload);
 
         long timestamp = Instant.now().toEpochMilli();
         MessageReceiveDTO messageReceiveDTO = MessageReceiveDTO.builder()
-                .senderName(senderName)
+                .senderId(senderId)
                 .timestamp(timestamp)
                 .content(String.valueOf(timestamp))
                 .type(messageType)
@@ -116,78 +121,79 @@ public class WebSocketServiceImpl implements WebSocketService {
 
         //  send back
         MessageReceiveDTO sendBack = MessageReceiveDTO.builder()
-                .senderName(botName)
+                .senderId(botId)
                 .content("I'm not enough paid to analyze your media☝️")
                 .type(MessageType.TEXT)
                 .timestamp(Instant.now().toEpochMilli())
                 .build();
-        sendBotMessage(senderName, sendBack);
+        sendBotMessage(senderId, sendBack);
     }
 
     @Override
-    public void handleFileToPrivate(byte[] payload, MessageType messageType, ObjectId senderId,
-                                    String senderName, String receiverName) {
+    public void handleFileToPrivate(byte[] payload, MessageType messageType, UUID senderId,
+                                    UUID receiverId) {
         InputStream inputStream = new ByteArrayInputStream(payload);
         long timestamp = Instant.now().toEpochMilli();
         MessageReceiveDTO messageReceiveDTO = MessageReceiveDTO.builder()
-                .senderName(senderName)
+                .senderId(senderId)
                 .timestamp(timestamp)
                 .content(String.valueOf(timestamp))
                 .type(messageType)
                 .build();
 
-        messageService.persistPrivateFile(messageReceiveDTO, inputStream, senderId, receiverName);
+        messageService.persistPrivateFile(messageReceiveDTO, inputStream, senderId, receiverId);
 
         Map<String, Object> headers = new HashMap<>();
         headers.put("contentType", messageType.getValue());
-        headers.put("sender", senderName);
+        headers.put("sender", senderId);
 
-        messagingTemplate.convertAndSendToUser(receiverName, "/private/messages", payload, headers);
+        messagingTemplate.convertAndSendToUser(receiverId.toString(), "/private/messages", payload, headers);
     }
 
     @Override
-    public void handleFileToGroup(byte[] payload, MessageType messageType, ObjectId senderId,
-                                  String senderName, String groupId) {
+    public void handleFileToGroup(byte[] payload, MessageType messageType, UUID senderId,
+                                  UUID groupId) {
         InputStream inputStream = new ByteArrayInputStream(payload);
         long timestamp = Instant.now().toEpochMilli();
         MessageReceiveDTO messageReceiveDTO = MessageReceiveDTO.builder()
-                .senderName(senderName)
+                .senderId(senderId)
                 .timestamp(timestamp)
                 .content(String.valueOf(timestamp))
                 .type(messageType)
                 .build();
 
-        messageService.persistGroupFile(messageReceiveDTO, inputStream, senderId, new ObjectId(groupId));
+        messageService.persistGroupFile(messageReceiveDTO, inputStream, senderId, groupId);
 
 
         Map<String, Object> headers = new HashMap<>();
         headers.put("contentType", messageType.getValue());
+        headers.put("sender", senderId);
 
         messagingTemplate.convertAndSend("/group/" + groupId + "/messages", payload ,headers);
     }
 
     @Override
-    public void subscribeUserToGroup(String username, ObjectId groupId) {
+    public void subscribeUserToGroup(UUID userId, UUID groupId) {
         MessageReceiveDTO message = MessageReceiveDTO.builder()
-                .content(groupId.toHexString())
+                .content(groupId.toString())
                 .type(MessageType.JOIN)
                 .build();
-        sendPrivateMessage(username, message);
+        sendPrivateMessage(userId, message);
     }
 
     @Override
-    public void unsubscribeUserFromGroup(String username, ObjectId groupId) {
+    public void unsubscribeUserFromGroup(UUID userId, UUID groupId) {
         MessageReceiveDTO message = MessageReceiveDTO.builder()
-                .content(groupId.toHexString())
+                .content(groupId.toString())
                 .type(MessageType.LEAVE)
                 .build();
-        sendPrivateMessage(username, message);
+        sendPrivateMessage(userId, message);
     }
 
-    private MessageReceiveDTO buildMessageReceiveDTO(MessageSendDTO messageSendDTO, String senderName, long timestamp) {
+    private MessageReceiveDTO buildMessageReceiveDTO(MessageSendDTO messageSendDTO, UUID senderId, long timestamp) {
         return MessageReceiveDTO.builder()
                 .timestamp(timestamp)
-                .senderName(senderName)
+                .senderId(senderId)
                 .content(messageSendDTO.getContent())
                 .type(messageSendDTO.getType())
                 .build();

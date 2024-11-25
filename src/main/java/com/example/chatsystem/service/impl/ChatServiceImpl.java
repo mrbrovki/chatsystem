@@ -6,13 +6,11 @@ import com.example.chatsystem.bot.BotService;
 import com.example.chatsystem.dto.chat.*;
 import com.example.chatsystem.dto.groupchat.CreateGroupRequest;
 import com.example.chatsystem.exception.DocumentNotFoundException;
-import com.example.chatsystem.model.ChatType;
-import com.example.chatsystem.model.GroupChat;
-import com.example.chatsystem.model.ReadStatus;
-import com.example.chatsystem.model.User;
+import com.example.chatsystem.model.*;
 import com.example.chatsystem.repository.GroupChatRepo;
 import com.example.chatsystem.service.*;
-import org.bson.types.ObjectId;
+import com.fasterxml.uuid.Generators;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -21,7 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.UUID;
 
 import static com.example.chatsystem.utils.CollectionUtils.buildCollectionName;
 
@@ -50,23 +48,24 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public GroupChat findById(ObjectId id) {
-        return groupChatRepo.findById(id).orElseThrow(()->new DocumentNotFoundException("Chat " + id.toHexString() + " not found"));
+    public GroupChat findById(UUID id) {
+        return groupChatRepo.findById(id).orElseThrow(()->new DocumentNotFoundException("Chat " + id.toString() + " not found"));
     }
 
     @Override
-    public GroupChatResponse findById(ObjectId userId, ObjectId groupId) {
+    public GroupChatResponse findById(UUID userId, UUID groupId) {
         GroupChat groupChat = findById(groupId);
         User user = userService.findById(groupChat.getHostId());
 
         if(groupChat.getMemberIds().contains(userId)){
             return GroupChatResponse.builder()
-                    .id(groupId.toHexString())
-                    .members(groupChat.getMemberIds().stream().map(ObjectId::toHexString).collect(Collectors.toList()))
+                    .id(groupId)
+                    .members(groupChat.getMemberIds())
                     .name(groupChat.getName())
-                    .host(user.getUsername())
+                    .hostId(user.getId())
                     .image(groupChat.getImage())
                     .type(ChatType.GROUP)
+                    .state(ChatState.NONE)
                     .build();
         }
 
@@ -79,29 +78,29 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public GroupChat changeGroupChatHost(ObjectId userId, ObjectId chatId, String hostName) {
+    public GroupChat changeGroupChatHost(UUID userId, UUID chatId, String hostName) {
         GroupChat groupChat = findById(chatId);
         User newHostUser = userService.findByUsername(hostName);
         if(isHost(groupChat, userId)){
-            groupChat.setHostId(newHostUser.getUserId());
+            groupChat.setHostId(newHostUser.getId());
         }
         return updateGroupChat(groupChat);
     }
 
     @Override
-    public void deleteGroupChat(ObjectId userId, ObjectId chatId) {
-        GroupChat groupChat = findById(chatId);
+    public void deleteGroupChat(UUID userId, UUID groupId) {
+        GroupChat groupChat = findById(groupId);
         if (isHost(groupChat, userId)) {
-            List<ObjectId> memberIds = groupChat.getMemberIds();
-            for (ObjectId memberId : memberIds) {
-                webSocketService.unsubscribeUserFromGroup(userService.findById(memberId).getUsername(), chatId);
+            List<UUID> memberIds = groupChat.getMemberIds();
+            for (UUID memberId : memberIds) {
+                webSocketService.unsubscribeUserFromGroup(memberId, groupId);
             }
             groupChatRepo.delete(groupChat);
         }
     }
 
     @Override
-    public GroupChat addMemberToGroupChat(ObjectId userId, ObjectId chatId, String memberName) {
+    public GroupChat addMemberToGroupChat(UUID userId, UUID chatId, String memberName) {
         GroupChat groupChat = findById(chatId);
         User member = userService.findByUsername(memberName);
 
@@ -112,7 +111,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public GroupChat removeMemberFromGroupChat(ObjectId userId, ObjectId chatId, String memberName) {
+    public GroupChat removeMemberFromGroupChat(UUID userId, UUID chatId, String memberName) {
         GroupChat groupChat = findById(chatId);
         User member = userService.findByUsername(memberName);
 
@@ -123,37 +122,37 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public void addUserToGroup(ObjectId userId, ObjectId chatId){
+    public void addUserToGroup(UUID userId, UUID chatId){
         GroupChat groupChat = findById(chatId);
         User user = userService.findById(userId);
         addUserToGroup(user, groupChat);
     }
 
     @Override
-    public void removeUserFromGroup(ObjectId userId, ObjectId chatId){
+    public void removeUserFromGroup(UUID userId, UUID chatId){
         GroupChat groupChat = findById(chatId);
         User user = userService.findById(userId);
         removeUserFromGroup(user, groupChat);
-        String collectionName = buildCollectionName(chatId, null, ChatType.GROUP);
+        String collectionName = buildCollectionName(chatId, null);
         messageService.updateLastMessageStatus(userId, collectionName);
     }
 
     private void addUserToGroup(User user, GroupChat groupChat) {
-        groupChat.getMemberIds().add(user.getUserId());
-        userService.addGroupChatToUser(user.getUserId(), groupChat.getId());
-        webSocketService.subscribeUserToGroup(user.getUsername(), groupChat.getId());
+        groupChat.getMemberIds().add(user.getId());
+        userService.addGroupChatToUser(user.getId(), groupChat.getId());
+        webSocketService.subscribeUserToGroup(user.getId(), groupChat.getId());
     }
 
     private void removeUserFromGroup(User user, GroupChat groupChat){
-        groupChat.getMemberIds().remove(user.getUserId());
+        groupChat.getMemberIds().remove(user.getId());
         groupChatRepo.save(groupChat);
 
-        userService.removeGroupChatFromUser(user.getUserId(), groupChat.getId());
-        webSocketService.unsubscribeUserFromGroup(user.getUsername(), groupChat.getId());
+        userService.removeGroupChatFromUser(user.getId(), groupChat.getId());
+        webSocketService.unsubscribeUserFromGroup(user.getId(), groupChat.getId());
     }
 
     @Override
-    public GroupChat changeGroupChatName(ObjectId userId, ObjectId chatId, String newName) {
+    public GroupChat changeGroupChatName(UUID userId, UUID chatId, String newName) {
         GroupChat groupChat = findById(chatId);
         if(isHost(groupChat, userId)) {
             groupChat.setName(newName);
@@ -162,7 +161,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public GroupChatResponse createGroupChat(ObjectId userId, CreateGroupRequest request) {
+    public GroupChatResponse createGroupChat(UUID userId, CreateGroupRequest request) {
         GroupChat groupChat = GroupChat.builder()
                 .name(request.getName())
                 .hostId(userId)
@@ -170,15 +169,12 @@ public class ChatServiceImpl implements ChatService {
 
         User hostUser = userService.findById(userId);
 
-        List<ObjectId> memberIds = new ArrayList<>();
-
-        for (String memberName : request.getMemberNames()) {
-            memberIds.add(userService.findByUsername(memberName).getUserId());
-        }
+        List<UUID> memberIds = new ArrayList<>(request.getMemberIds());
+        
         memberIds.add(userId);
         groupChat.setMemberIds(memberIds);
 
-        ObjectId groupId = new ObjectId();
+        UUID groupId = Generators.defaultTimeBasedGenerator().generate();
 
         groupChat.setId(groupId);
 
@@ -186,8 +182,8 @@ public class ChatServiceImpl implements ChatService {
         MultipartFile image = request.getImage();
         try {
             if(image.getSize() != 0){
-                PutObjectResult result = s3Service.uploadAvatar(image.getInputStream(), groupId.toHexString(), image.getContentType());
-                groupChat.setImage(avatarsUrl + groupId.toHexString());
+                PutObjectResult result = s3Service.uploadAvatar(image.getInputStream(), groupId.toString(), image.getContentType());
+                groupChat.setImage(avatarsUrl + groupId.toString());
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -197,24 +193,24 @@ public class ChatServiceImpl implements ChatService {
         GroupChat createdGroupChat = groupChatRepo.save(groupChat);
 
         //  add group chat to every member
-        for (ObjectId memberId : memberIds) {
-            User user = userService.findById(memberId);
-            userService.addGroupChatToUser(user.getUserId(), createdGroupChat.getId());
-            webSocketService.subscribeUserToGroup(user.getUsername(), createdGroupChat.getId());
+        for (UUID memberId : memberIds) {
+            userService.addGroupChatToUser(memberId, createdGroupChat.getId());
+            webSocketService.subscribeUserToGroup(memberId, createdGroupChat.getId());
         }
 
         return GroupChatResponse.builder()
-                .id(createdGroupChat.getId().toHexString())
-                .members(createdGroupChat.getMemberIds().stream().map(ObjectId::toHexString).collect(Collectors.toList()))
+                .id(createdGroupChat.getId())
+                .members(createdGroupChat.getMemberIds())
                 .name(createdGroupChat.getName())
-                .host(hostUser.getUsername())
+                .hostId(hostUser.getId())
                 .image(createdGroupChat.getImage())
                 .type(ChatType.GROUP)
+                .state(ChatState.NONE)
                 .build();
     }
 
     @Override
-    public ChatResponseDTO findAllChats(ObjectId userId) {
+    public ChatResponseDTO findAllChats(UUID userId) {
         User user = userService.findById(userId);
 
         ArrayList<PrivateChatResponse> privateChatDTOs = new ArrayList<>();
@@ -234,22 +230,22 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public void deleteChats(ObjectId userId, DeleteChatsRequest deleteChatsRequest) {
-        for(String privateChat: deleteChatsRequest.getPrivateChats()){
-            deletePrivateChat(userId, privateChat, deleteChatsRequest.isBoth());
+    public void deleteChats(UUID userId, DeleteChatsRequest deleteChatsRequest) {
+        for(UUID privateChatId: deleteChatsRequest.getPrivateChats()){
+            deletePrivateChat(userId, privateChatId, deleteChatsRequest.isBoth());
         }
 
-        for (String groupChat: deleteChatsRequest.getGroupChats()) {
-            removeUserFromGroup(userId, new ObjectId(groupChat));
+        for (UUID groupChatId: deleteChatsRequest.getGroupChats()) {
+            removeUserFromGroup(userId, groupChatId);
         }
 
-        for (String botChat: deleteChatsRequest.getBotChats()) {
-            deleteBotChat(userId, botChat);
+        for (UUID botChatId: deleteChatsRequest.getBotChats()) {
+            deleteBotChat(userId, botChatId);
         }
     }
 
     @Override
-    public ArrayList<PrivateChatResponse> findPrivateChats(ObjectId userId) {
+    public ArrayList<PrivateChatResponse> findPrivateChats(UUID userId) {
         ArrayList<PrivateChatResponse> chatDTOs = new ArrayList<>();
         User user;
         try {
@@ -265,39 +261,38 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public PrivateChatResponse findPrivateChatByName(ObjectId userId, String targetName) {
-        User targetUser = userService.findByUsername(targetName);
-        String collectionName = buildCollectionName(userId, targetUser.getUserId(), ChatType.PRIVATE);
+    public PrivateChatResponse findPrivateChatById(UUID userId, UUID targetUserId) {
+        User targetUser = userService.findById(targetUserId);
+        String collectionName = buildCollectionName(userId, targetUserId);
         ReadStatus readStatus = readStatusService.getReadStatus(collectionName, userId);
         return PrivateChatResponse.builder()
                 .username(targetUser.getUsername())
                 .avatar(targetUser.getAvatar())
                 .lastReadTime(readStatus.getLastReadTime())
                 .type(ChatType.PRIVATE)
+                .state(ChatState.NONE)
                 .build();
     }
 
     @Override
-    public void addPrivateChat(ObjectId userId, AddChatRequest privateChatDTO) {
-        ObjectId chatId = userService.findByUsername(privateChatDTO.getChatName()).getUserId();
-        userService.addPrivateChatToUser(userId, chatId);
+    public void addPrivateChat(UUID userId, AddChatRequest privateChatDTO) {
+        userService.addPrivateChatToUser(userId, privateChatDTO.getChatId());
     }
 
     @Override
-    public void deletePrivateChat(ObjectId userId, String username, boolean isBoth) {
-        User targetUser = userService.findByUsername(username);
-        userService.removePrivateChatFromUser(userId, targetUser.getUserId());
-        String collectionName = buildCollectionName(userId, targetUser.getUserId(), ChatType.PRIVATE);
+    public void deletePrivateChat(UUID userId, UUID targetUserId, boolean isBoth) {
+        userService.removePrivateChatFromUser(userId, targetUserId);
+        String collectionName = buildCollectionName(userId, targetUserId);
         messageService.updateLastMessageStatus(userId, collectionName);
 
         if(isBoth){
-            userService.removePrivateChatFromUser(targetUser.getUserId(), userId);
-            messageService.updateLastMessageStatus(targetUser.getUserId(), collectionName);
+            userService.removePrivateChatFromUser(targetUserId, userId);
+            messageService.updateLastMessageStatus(targetUserId, collectionName);
         }
     }
 
     @Override
-    public ArrayList<GroupChatResponse> findGroupChats(ObjectId userId) {
+    public ArrayList<GroupChatResponse> findGroupChats(UUID userId) {
         ArrayList<GroupChatResponse> chatDTOs = new ArrayList<>();
         User user = userService.findById(userId);
         setUserGroupChats(chatDTOs, user);
@@ -305,7 +300,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public ArrayList<BotChatResponse> findBotChats(ObjectId userId){
+    public ArrayList<BotChatResponse> findBotChats(UUID userId){
         ArrayList<BotChatResponse> botChatDTOs = new ArrayList<>();
         User user = userService.findById(userId);
         setUserBotChats(botChatDTOs, user);
@@ -313,15 +308,14 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public void deleteBotChat(ObjectId userId, String botName) {
-        ObjectId botId = botService.getBotByName(botName).getId();
+    public void deleteBotChat(UUID userId, UUID botId) {
         userService.removeBotChatFromUser(userId, botId);
-        String collectionName = buildCollectionName(userId, botId, ChatType.BOT);
+        String collectionName = buildCollectionName(userId, botId);
         messageService.updateLastMessageStatus(userId, collectionName);
     }
 
     @Override
-    public ArrayList<String> findGroupChatMemberNames(ObjectId chatId){
+    public ArrayList<String> findGroupChatMemberNames(UUID chatId){
         ArrayList<String> memberNames = new ArrayList<>();
         GroupChat groupChat = findById(chatId);
         groupChat.getMemberIds().forEach(memberId -> {
@@ -331,16 +325,16 @@ public class ChatServiceImpl implements ChatService {
         return memberNames;
     }
 
-    private boolean isHost(GroupChat groupChat, ObjectId userId){
+    private boolean isHost(GroupChat groupChat, UUID userId){
         return groupChat.getHostId().equals(userId);
     }
 
     private void setUserPrivateChats(ArrayList<PrivateChatResponse> chatDTOs, User user) {
-        List<ObjectId> chatUserIds = user.getPrivateChats();
+        List<UUID> chatUserIds = user.getPrivateChats();
 
-        for (ObjectId chatUserId : chatUserIds) {
-            String collectionName = buildCollectionName(user.getUserId(), chatUserId, ChatType.PRIVATE);
-            ReadStatus readStatus = readStatusService.getReadStatus(collectionName, user.getUserId());
+        for (UUID chatUserId : chatUserIds) {
+            String collectionName = buildCollectionName(user.getId(), chatUserId);
+            ReadStatus readStatus = readStatusService.getReadStatus(collectionName, user.getId());
 
             User receiver = userService.findById(chatUserId);
             chatDTOs.add(PrivateChatResponse.builder()
@@ -348,35 +342,38 @@ public class ChatServiceImpl implements ChatService {
                     .avatar(receiver.getAvatar())
                     .type(ChatType.PRIVATE)
                     .lastReadTime(readStatus.getLastReadTime())
+                    .state(ChatState.NONE)
+                    .id(chatUserId)
                     .build());
         }
     }
 
     private void setUserGroupChats(ArrayList<GroupChatResponse> chatDTOs, User user) {
-        List<ObjectId> groupChatIds = user.getGroupChats();
-        for (ObjectId chatId : groupChatIds) {
-            String collectionName = buildCollectionName(chatId, null, ChatType.GROUP);
-            ReadStatus readStatus = readStatusService.getReadStatus(collectionName, user.getUserId());
+        List<UUID> groupChatIds = user.getGroupChats();
+        for (UUID chatId : groupChatIds) {
+            String collectionName = buildCollectionName(chatId, null);
+            ReadStatus readStatus = readStatusService.getReadStatus(collectionName, user.getId());
 
             GroupChat groupChat = findById(chatId);
             User hostUser = userService.findById(groupChat.getHostId());
             chatDTOs.add(GroupChatResponse.builder()
-                    .id(chatId.toHexString())
-                    .members(groupChat.getMemberIds().stream().map(ObjectId::toHexString).collect(Collectors.toList()))
+                    .id(chatId)
+                    .members(groupChat.getMemberIds())
                     .name(groupChat.getName())
-                    .host(hostUser.getUsername())
+                    .hostId(hostUser.getId())
                     .image(groupChat.getImage())
                     .type(ChatType.GROUP)
                     .lastReadTime(readStatus.getLastReadTime())
+                    .state(ChatState.NONE)
                     .build());
         }
     }
 
     private void setUserBotChats(ArrayList<BotChatResponse> chatDTOs, User user) {
-        List<ObjectId> botIds = user.getBotChats();
-        for (ObjectId botId : botIds) {
-            String collectionName = buildCollectionName(user.getUserId(), botId, ChatType.BOT);
-            ReadStatus readStatus = readStatusService.getReadStatus(collectionName, user.getUserId());
+        List<UUID> botIds = user.getBotChats();
+        for (UUID botId : botIds) {
+            String collectionName = buildCollectionName(user.getId(), botId);
+            ReadStatus readStatus = readStatusService.getReadStatus(collectionName, user.getId());
 
             Bot bot = botService.getBotById(botId);
             chatDTOs.add(BotChatResponse.builder()
@@ -384,6 +381,8 @@ public class ChatServiceImpl implements ChatService {
                             .type(ChatType.BOT)
                             .avatar(bot.getAvatar())
                             .lastReadTime(readStatus.getLastReadTime())
+                            .id(botId)
+                    .state(ChatState.ONLINE)
                     .build());
         }
     }

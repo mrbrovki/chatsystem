@@ -7,13 +7,12 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 public class MessagesResponse {
-    private Map<String, List<MessageDTO>> PRIVATE;
-    private Map<String, List<MessageDTO>> GROUP;
-    private Map<String, List<MessageDTO>> BOT;
+    private Map<UUID, List<MessageDTO>> messages;
 }

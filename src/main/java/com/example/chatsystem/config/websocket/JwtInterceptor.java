@@ -3,7 +3,7 @@ package com.example.chatsystem.config.websocket;
 import com.example.chatsystem.security.JwtService;
 import com.example.chatsystem.security.MyUserDetails;
 import com.example.chatsystem.security.MyUserDetailsService;
-import org.bson.types.ObjectId;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
@@ -14,6 +14,7 @@ import org.springframework.web.socket.server.HandshakeInterceptor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 
 @Component
@@ -40,14 +41,14 @@ public class JwtInterceptor implements HandshakeInterceptor {
                     jwt = split[1];
                 }
             }
-            ObjectId userId;
+            UUID userId;
             try {
-                userId = new ObjectId(jwtService.extractUserId(jwt));
+                userId = jwtService.extractUserId(jwt);
             }catch (Exception e){
                 return false;
             }
 
-            if(!userId.toHexString().isEmpty()) {
+            if(!userId.toString().isEmpty()) {
                 MyUserDetails userDetails = userDetailsService.loadUserByUserId(userId);
                 UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 if (jwtService.validateToken(jwt, userDetails)) {

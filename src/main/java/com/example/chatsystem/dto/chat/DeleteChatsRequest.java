@@ -5,13 +5,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 public class DeleteChatsRequest {
-    String[] privateChats;
-    String[] groupChats;
-    String[] botChats;
+    UUID[] privateChats;
+    UUID[] groupChats;
+    UUID[] botChats;
     boolean both;
 }

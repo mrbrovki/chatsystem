@@ -2,7 +2,7 @@ package com.example.chatsystem.repository;
 
 import com.example.chatsystem.model.User;
 import com.mongodb.client.result.DeleteResult;
-import org.bson.types.ObjectId;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.springframework.data.mongodb.core.query.Criteria.where;
 import static org.springframework.data.mongodb.core.query.Query.query;
@@ -38,7 +39,7 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public Optional<User> findById(ObjectId id) {
+    public Optional<User> findById(UUID id) {
         return Optional.ofNullable(mongoTemplate.findById(id, User.class));
     }
 
@@ -48,7 +49,7 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public void update(ObjectId userId, Map<String, Object> fieldsToUpdate){
+    public void update(UUID userId, Map<String, Object> fieldsToUpdate){
         Query query = new Query();
         query.addCriteria(where("_id").is(userId));
         Update update = new Update();
@@ -63,7 +64,7 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public void addChat(ObjectId userId, ObjectId chatId, String set) {
+    public void addChat(UUID userId, UUID chatId, String set) {
         mongoTemplate.updateFirst(
                 query(where("_id").is(userId)),
                 new Update().addToSet(set, chatId),
@@ -73,7 +74,7 @@ public class UserRepositoryImpl implements UserRepository {
 
 
     @Override
-    public void removeChats(ObjectId userId, String[] privateChats, String[] groupChats, String[] botChats) {
+    public void removeChats(UUID userId, UUID[] privateChats, UUID[] groupChats, UUID[] botChats) {
         mongoTemplate.updateFirst(
                 query(where("_id").is(userId)),
                 new Update()
@@ -85,7 +86,7 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public void removeChat(ObjectId userId, ObjectId chatId, String set) {
+    public void removeChat(UUID userId, UUID chatId, String set) {
         mongoTemplate.updateFirst(
                 query(where("_id").is(userId)),
                 new Update().pull(set, chatId),

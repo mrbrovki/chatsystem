@@ -3,27 +3,29 @@ package com.example.chatsystem.service;
 import com.example.chatsystem.dto.websocket.MessageReceiveDTO;
 import com.example.chatsystem.dto.websocket.MessageSendDTO;
 import com.example.chatsystem.model.MessageType;
-import org.bson.types.ObjectId;
+
+
+import java.util.UUID;
 
 public interface WebSocketService {
 
-    void sendPrivateMessage(String receiverName, MessageReceiveDTO message);
+    void sendPrivateMessage(UUID receiverId, MessageReceiveDTO message);
 
-    void sendBotMessage(String receiverName, MessageReceiveDTO message);
+    void sendBotMessage(UUID receiverId, MessageReceiveDTO message);
 
-    void sendGroupMessage(String groupId, MessageReceiveDTO message);
+    void sendGroupMessage(UUID groupId, MessageReceiveDTO message);
 
-    void handleMessageToBot(MessageSendDTO messageSendDTO, ObjectId senderId, String senderName);
+    void handleMessageToBot(MessageSendDTO messageSendDTO, UUID senderId);
 
-    void handlePrivateMessage(MessageSendDTO messageSendDTO, ObjectId senderId, String senderName);
+    void handlePrivateMessage(MessageSendDTO messageSendDTO, UUID senderId);
 
-    void handleGroupMessage(MessageSendDTO messageSendDTO, ObjectId senderId, String senderName);
+    void handleGroupMessage(MessageSendDTO messageSendDTO, UUID senderId);
 
-    void handleFileToBot(byte[] payload, MessageType messageType, ObjectId senderId, String senderName, String receiverName);
-    void handleFileToPrivate(byte[] payload, MessageType messageType, ObjectId senderId, String senderName, String receiverName);
-    void handleFileToGroup(byte[] payload, MessageType messageType, ObjectId senderId, String senderName, String receiverName);
+    void handleFileToBot(byte[] payload, MessageType messageType, UUID senderId, UUID receiverId);
+    void handleFileToPrivate(byte[] payload, MessageType messageType, UUID senderId, UUID receiverId);
+    void handleFileToGroup(byte[] payload, MessageType messageType, UUID senderId, UUID groupId);
 
-    void subscribeUserToGroup(String username, ObjectId groupId);
+    void subscribeUserToGroup(UUID userId, UUID groupId);
 
-    void unsubscribeUserFromGroup(String username, ObjectId groupId);
+    void unsubscribeUserFromGroup(UUID userId, UUID groupId);
 }

@@ -6,10 +6,10 @@ import com.example.chatsystem.dto.websocket.MessageReceiveDTO;
 import com.example.chatsystem.dto.message.MessagesResponse;
 import com.example.chatsystem.model.*;
 import com.example.chatsystem.security.MyUserDetails;
-import org.bson.types.ObjectId;
 
 import java.io.InputStream;
 import java.util.List;
+import java.util.UUID;
 
 public interface MessageService{
 
@@ -17,61 +17,61 @@ public interface MessageService{
 
     List<Message> findAfter(String messageId, String collectionName);
 
-    Message findMessageById(String collectionName, ObjectId id);
+    Message findMessageById(String collectionName, String id);
 
     Message saveMessage(String collectionName, Message message);
 
     Message updateMessage(String collectionName, Message message);
 
-    void deleteMessage(String collectionName, ObjectId id);
+    void deleteMessage(String collectionName, String id);
 
     void deleteAllMessages(String collectionName);
 
-    void persistPrivateMessage(MessageReceiveDTO messageReceiveDTO, ObjectId senderId, String receiverName);
+    void persistPrivateMessage(MessageReceiveDTO messageReceiveDTO, UUID senderId, UUID receiverId);
 
     void persistPrivateMessage(MessageReceiveDTO messageReceiveDTO, String collectionName,
-                               ObjectId senderId, ObjectId receiverId);
+                               UUID senderId, UUID receiverId);
 
-    void persistBotMessage(MessageReceiveDTO messageReceiveDTO, ObjectId senderId, ObjectId receiverId);
+    void persistBotMessage(MessageReceiveDTO messageReceiveDTO, UUID senderId, UUID receiverId);
 
 
 
 
     void persistBotMessage(MessageReceiveDTO messageReceiveDTO, String collectionName,
-                           ObjectId senderId, ObjectId receiverId);
+                           UUID senderId, UUID receiverId);
 
-    void persistGroupMessage(MessageReceiveDTO messageReceiveDTO, ObjectId senderId, ObjectId groupId);
+    void persistGroupMessage(MessageReceiveDTO messageReceiveDTO, UUID senderId, UUID groupId);
 
 
     void persistGroupMessage(MessageReceiveDTO messageReceiveDTO, String collectionName,
-                             ObjectId senderId);
+                             UUID senderId);
 
-    void persistGroupFile(MessageReceiveDTO messageReceiveDTO, InputStream inputStream, ObjectId senderId, ObjectId groupId);
+    void persistGroupFile(MessageReceiveDTO messageReceiveDTO, InputStream inputStream, UUID senderId, UUID groupId);
 
-    void persistBotFile(MessageReceiveDTO messageReceiveDTO, InputStream inputStream, ObjectId senderId, ObjectId receiverId);
+    void persistBotFile(MessageReceiveDTO messageReceiveDTO, InputStream inputStream, UUID senderId, UUID receiverId);
 
     void persistPrivateFile(MessageReceiveDTO messageReceiveDTO, InputStream inputStream,
-                            ObjectId senderId, String receiverName);
+                            UUID senderId, UUID receiverId);
 
     boolean collectionExists(String collectionName);
 
     MessagesResponse getAllMessages(MyUserDetails userDetails);
 
 
-    List<MessageDTO> getPrivateChatMessages(ObjectId userId, String username, String targetUserName);
+    List<MessageDTO> getPrivateChatMessages(UUID userId, UUID targetUserId);
 
-    List<MessageDTO> getBotChatMessages(ObjectId userId, String username, String botName);
+    List<MessageDTO> getBotChatMessages(UUID userId, UUID botId);
 
-    List<MessageDTO> getGroupChatMessages(ObjectId userId, GroupChat groupChat);
+    List<MessageDTO> getGroupChatMessages(UUID userId, GroupChat groupChat);
 
-    S3File findFileById(MyUserDetails userDetails, String chatName,
-                        String senderName, ChatType chatType, String fileId);
+    S3File findFileById(MyUserDetails userDetails, UUID chatId,
+                        UUID senderId, ChatType chatType, String fileId);
 
-    void updateLastMessageStatus(ObjectId userId, String collectionName);
+    void updateLastMessageStatus(UUID userId, String collectionName);
 
-    void updatePrivateReadStatus(ObjectId userId, String chatName);
+    void updatePrivateReadStatus(UUID userId, UUID chatId);
 
-    void updateGroupReadStatus(ObjectId userId, ObjectId groupChatId);
+    void updateGroupReadStatus(UUID userId, UUID groupId);
 
-    void updateBotReadStatus(ObjectId userId, String chatName);
+    void updateBotReadStatus(UUID userId, UUID botId);
 }

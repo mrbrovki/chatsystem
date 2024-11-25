@@ -1,6 +1,5 @@
 package com.example.chatsystem.controller;
 
-import com.example.chatsystem.dto.auth.JwtResponse;
 import com.example.chatsystem.dto.chat.PrivateChatResponse;
 import com.example.chatsystem.dto.user.EditRequest;
 import com.example.chatsystem.dto.user.EditResponse;
@@ -10,7 +9,7 @@ import com.example.chatsystem.utils.CookieUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.bson.types.ObjectId;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -73,22 +72,13 @@ public class UserController {
             throw new RuntimeException(e);
         }
 
-        JwtResponse jwtResponse = userService.edit(new ObjectId(userDetails.getUserId()), userDetails.getUsername(), request);
-
-        CookieUtils.addCookie(response, "jwt", jwtResponse.getAccessToken(),
-                3600 * 24 * 7, httpServletRequest.getServerName());
-
-        EditResponse editResponse = EditResponse.builder()
-                .avatar(jwtResponse.getAvatar())
-                .username(jwtResponse.getUsername())
-                .build();
-
+        EditResponse editResponse = userService.edit(userDetails.getUserId(), request);
         return ResponseEntity.ok(editResponse);
     }
     @DeleteMapping("/delete")
     public ResponseEntity<Void> deleteUser(@AuthenticationPrincipal MyUserDetails userDetails,
                                            HttpServletRequest request,HttpServletResponse response) {
-        boolean isSuccess = userService.delete(new ObjectId(userDetails.getUserId()));
+        boolean isSuccess = userService.delete(userDetails.getUserId());
         CookieUtils.addCookie(response, "jwt", "",
                 0, request.getServerName());
         return ResponseEntity.noContent().build();

@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -17,6 +18,6 @@ public class CreateGroupRequest {
     @NotBlank
     private String name;
 
-    private List<String> memberNames;
+    private List<UUID> memberIds;
     private MultipartFile image;
 }

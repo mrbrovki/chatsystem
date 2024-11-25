@@ -26,14 +26,15 @@ public class AuthenticationController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest authRequest, HttpServletRequest request, HttpServletResponse response){
-        JwtResponse jwtResponse = authService.authenticate(authRequest);
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest loginRequest, HttpServletRequest request, HttpServletResponse response){
+        JwtResponse jwtResponse = authService.authenticate(loginRequest);
 
         CookieUtils.addCookie(response, "jwt", jwtResponse.getAccessToken(),
                 3600 * 24 * 7, request.getServerName());
 
         AuthResponse loginResponse = AuthResponse.builder()
                 .username(jwtResponse.getUsername())
+                .userId(jwtResponse.getId())
                 .avatar(jwtResponse.getAvatar())
                 .build();
 
@@ -53,6 +54,7 @@ public class AuthenticationController {
     public ResponseEntity<AuthResponse> authenticate(@AuthenticationPrincipal MyUserDetails userDetails) {
         AuthResponse authResponse = AuthResponse.builder()
                 .username(userDetails.getUsername())
+                .userId(userDetails.getUserId())
                 .avatar(userDetails.getAvatar())
                 .build();
         return ResponseEntity.ok(authResponse);
@@ -74,6 +76,7 @@ public class AuthenticationController {
         AuthResponse loginResponse = AuthResponse.builder()
                 .username(jwtResponse.getUsername())
                 .avatar(jwtResponse.getAvatar())
+                .userId(jwtResponse.getId())
                 .build();
 
         return ResponseEntity.ok(loginResponse);

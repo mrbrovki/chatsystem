@@ -1,7 +1,7 @@
 package com.example.chatsystem.repository;
 
 import com.example.chatsystem.model.ReadStatus;
-import org.bson.types.ObjectId;
+
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.springframework.data.mongodb.core.query.Criteria.where;
 
@@ -27,7 +28,7 @@ public class ReadStatusRepositoryImpl implements ReadStatusRepository {
     }
 
     @Override
-    public Optional<ReadStatus> findById(ObjectId userId, String collectionName) {
+    public Optional<ReadStatus> findById(UUID userId, String collectionName) {
         return Optional.ofNullable(mongoTemplate.findById(userId, ReadStatus.class, collectionName));
     }
 
@@ -37,7 +38,7 @@ public class ReadStatusRepositoryImpl implements ReadStatusRepository {
     }
 
     @Override
-    public void upsert(ObjectId userId, Map<String, Object> fieldsToUpdate, String collectionName){
+    public void upsert(UUID userId, Map<String, Object> fieldsToUpdate, String collectionName){
         Query query = new Query();
         query.addCriteria(where("_id").is(userId));
         Update update = new Update();

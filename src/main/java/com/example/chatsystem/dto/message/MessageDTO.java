@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -13,6 +15,6 @@ import lombok.NoArgsConstructor;
 public class MessageDTO {
     private long timestamp;
     private String content;
-    private String senderName;
+    private UUID senderId;
     private MessageType type;
 }

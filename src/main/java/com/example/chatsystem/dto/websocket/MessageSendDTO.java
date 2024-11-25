@@ -7,12 +7,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 public class MessageSendDTO {
     private String content;
-    private String receiverName;
+    private UUID receiverId;
     private MessageType type;
 }

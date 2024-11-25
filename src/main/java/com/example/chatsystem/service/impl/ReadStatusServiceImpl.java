@@ -3,11 +3,11 @@ package com.example.chatsystem.service.impl;
 import com.example.chatsystem.model.ReadStatus;
 import com.example.chatsystem.repository.ReadStatusRepository;
 import com.example.chatsystem.service.ReadStatusService;
-import org.bson.types.ObjectId;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.UUID;
 
 @Service
 public class ReadStatusServiceImpl implements ReadStatusService {
@@ -18,7 +18,7 @@ public class ReadStatusServiceImpl implements ReadStatusService {
     }
 
     @Override
-    public void persist(ObjectId userId, String collectionName) {
+    public void persist(UUID userId, String collectionName) {
         collectionName = "status_" + collectionName;
         HashMap<String, Object> updates = new HashMap<>();
         updates.put("lastReadTime", Instant.now().toEpochMilli());
@@ -26,7 +26,7 @@ public class ReadStatusServiceImpl implements ReadStatusService {
     }
 
     @Override
-    public ReadStatus getReadStatus(String collectionName, ObjectId userId){
+    public ReadStatus getReadStatus(String collectionName, UUID userId){
         collectionName = "status_" + collectionName;
         return readStatusRepository.findById(userId, collectionName).orElse(
                 ReadStatus.builder()
@@ -36,7 +36,7 @@ public class ReadStatusServiceImpl implements ReadStatusService {
     }
 
     @Override
-    public void updateTimeRead(String collectionName, ObjectId userId){
+    public void updateTimeRead(String collectionName, UUID userId){
         collectionName = "status_" + collectionName;
 
         if(readStatusRepository.collectionExists(collectionName)){
@@ -47,7 +47,7 @@ public class ReadStatusServiceImpl implements ReadStatusService {
     }
 
     @Override
-    public void updateLastMessage(String collectionName, String messageId, ObjectId userId){
+    public void updateLastMessage(String collectionName, String messageId, UUID userId){
         collectionName = "status_" + collectionName;
 
         if(readStatusRepository.collectionExists(collectionName)){

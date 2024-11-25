@@ -7,7 +7,6 @@ import com.example.chatsystem.model.ChatType;
 import com.example.chatsystem.security.MyUserDetails;
 import com.example.chatsystem.service.ChatService;
 import com.example.chatsystem.service.MessageService;
-import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +14,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v4/messages")
@@ -30,59 +30,61 @@ public class MessageController {
 
     @GetMapping
     public ResponseEntity<MessagesResponse> getAllMessages(@AuthenticationPrincipal MyUserDetails userDetails) {
-        System.out.println(userDetails.getUserId());
         return ResponseEntity.ok(messageService.getAllMessages(userDetails));
     }
 
     @GetMapping(value = "/files/{id}")
     public ResponseEntity<byte[]> getImage(@AuthenticationPrincipal MyUserDetails userDetails,
                                            @PathVariable("id") String fileId,
-                                           @RequestParam String chatName,
-                                           @RequestParam String senderName,
+                                           @RequestParam UUID chatId,
+                                           @RequestParam UUID senderId,
                                            @RequestParam String chatType) {
-        S3File file = messageService.findFileById(userDetails, chatName, senderName, ChatType.fromValue(chatType), fileId);
+        S3File file = messageService.findFileById(userDetails, chatId, senderId, ChatType.fromValue(chatType), fileId);
         return ResponseEntity.ok().contentType(MediaType.parseMediaType(file.getContentType().getValue())).body(file.getData());
     }
 
-    @GetMapping("/private/{chatName}")
-    public ResponseEntity<List<MessageDTO>> getPrivateMessages(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable String chatName){
+    @GetMapping("/private/{id}")
+    public ResponseEntity<List<MessageDTO>> getPrivateMessages(@AuthenticationPrincipal MyUserDetails userDetails,
+                                                               @PathVariable UUID id){
         List<MessageDTO> messageDTOS = messageService
-                .getPrivateChatMessages(new ObjectId(userDetails.getUserId()), userDetails.getUsername(), chatName);
+                .getPrivateChatMessages(userDetails.getUserId(), id);
         return ResponseEntity.ok(messageDTOS);
     }
 
-    @GetMapping("/bots/{botName}")
-    public ResponseEntity<List<MessageDTO>> getBotChatMessages(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable String botName){
+    @GetMapping("/bots/{id}")
+    public ResponseEntity<List<MessageDTO>> getBotChatMessages(@AuthenticationPrincipal MyUserDetails userDetails,
+                                                               @PathVariable UUID id){
         List<MessageDTO> messageDTOS = messageService
-                .getBotChatMessages(new ObjectId(userDetails.getUserId()), userDetails.getUsername(), botName);
+                .getBotChatMessages(userDetails.getUserId(), id);
         return ResponseEntity.ok(messageDTOS);
     }
 
-    @GetMapping("/groups/{groupId}")
-    public ResponseEntity<List<MessageDTO>> getGroupChatMessages(@AuthenticationPrincipal MyUserDetails userDetails, @PathVariable String groupId){
-        List<MessageDTO> messageDTOS = messageService.getGroupChatMessages(new ObjectId(userDetails.getUserId()),
-                chatService.findById(new ObjectId(groupId)));
+    @GetMapping("/groups/{id}")
+    public ResponseEntity<List<MessageDTO>> getGroupChatMessages(@AuthenticationPrincipal MyUserDetails userDetails,
+                                                                 @PathVariable UUID id){
+        List<MessageDTO> messageDTOS = messageService.getGroupChatMessages(userDetails.getUserId(),
+                chatService.findById(id));
         return ResponseEntity.ok(messageDTOS);
     }
 
-    @PutMapping("/private/{username}/status")
+    @PutMapping("/private/{id}/status")
     public ResponseEntity<Void> updatePrivateReadStatus(@AuthenticationPrincipal MyUserDetails userDetails,
-                                                          @PathVariable String username){
-        messageService.updatePrivateReadStatus(new ObjectId(userDetails.getUserId()), username);
+                                                          @PathVariable UUID id){
+        messageService.updatePrivateReadStatus(userDetails.getUserId(), id);
         return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/groups/{id}/status")
     public ResponseEntity<Void> updateGroupReadStatus(@AuthenticationPrincipal MyUserDetails userDetails,
-                                                        @PathVariable String id){
-        messageService.updateGroupReadStatus(new ObjectId(userDetails.getUserId()), new ObjectId(id));
+                                                        @PathVariable UUID id){
+        messageService.updateGroupReadStatus(userDetails.getUserId(), id);
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/bots/{botName}/status")
+    @PutMapping("/bots/{id}/status")
     public ResponseEntity<Void> updateBotReadStatus(@AuthenticationPrincipal MyUserDetails userDetails,
-                                                      @PathVariable String botName){
-        messageService.updateBotReadStatus(new ObjectId(userDetails.getUserId()), botName);
+                                                      @PathVariable UUID id){
+        messageService.updateBotReadStatus(userDetails.getUserId(), id);
         return ResponseEntity.noContent().build();
     }
 }

@@ -1,20 +1,19 @@
 package com.example.chatsystem.service.impl;
 
-import com.example.chatsystem.dto.auth.JwtResponse;
 import com.example.chatsystem.dto.auth.SignupRequest;
 import com.example.chatsystem.dto.auth.SignupResponse;
 import com.example.chatsystem.dto.chat.DeleteChatsRequest;
 import com.example.chatsystem.dto.chat.PrivateChatResponse;
 import com.example.chatsystem.dto.user.EditRequest;
+import com.example.chatsystem.dto.user.EditResponse;
 import com.example.chatsystem.exception.DocumentNotFoundException;
 import com.example.chatsystem.model.ChatType;
 import com.example.chatsystem.model.User;
 import com.example.chatsystem.repository.UserRepository;
 import com.example.chatsystem.security.JwtService;
-import com.example.chatsystem.security.MyUserDetails;
 import com.example.chatsystem.service.S3Service;
 import com.example.chatsystem.service.UserService;
-import org.bson.types.ObjectId;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -60,7 +59,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public boolean delete(ObjectId id) {
+    public boolean delete(UUID id) {
         Optional<User> user = userRepository.findById(id);
         boolean isSucecess = false;
 
@@ -72,11 +71,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public JwtResponse edit(ObjectId userId, String username, EditRequest editRequest) {
-        User user = userRepository.findByUsername(editRequest.getUsername())
-                .orElse(User.builder().userId(userId).build());
+    public EditResponse edit(UUID userId, EditRequest editRequest) {
+        User user = userRepository.findById(userId).orElseThrow(() ->
+                new DocumentNotFoundException(userId + " not found!"));
+        String newUsername = editRequest.getUsername();
 
-        if(!userId.equals(user.getUserId())){
+        if(doesUsernameExist(newUsername) && !user.getUsername().equals(newUsername)) {
             throw new RuntimeException("Username already exists!");
         }
 
@@ -87,29 +87,22 @@ public class UserServiceImpl implements UserService {
             updates.put("hashedPassword", passwordEncoder.encode(newPassword));
         }
 
-        if(!username.equals(editRequest.getUsername())){
+        if(!user.getUsername().equals(editRequest.getUsername())){
             updates.put("username", editRequest.getUsername());
         }
 
         MultipartFile avatar = editRequest.getAvatar();
         try {
             if(avatar.getSize() != 0) {
-                s3Service.deleteAvatar(username);
-                s3Service.uploadAvatar(avatar.getInputStream(), editRequest.getUsername(), avatar.getContentType());
-                updates.put("avatar", avatarsUrl + editRequest.getUsername());
-            }else{
-                s3Service.renameAvatar(username, editRequest.getUsername());
+                s3Service.uploadAvatar(avatar.getInputStream(), userId.toString(), avatar.getContentType());
+                updates.put("avatar", avatarsUrl + userId.toString());
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
         userRepository.update(userId, updates);
-
-        MyUserDetails userDetails = new MyUserDetails(editRequest.getUsername(), "", new HashSet<>(),
-                userId.toHexString(), avatarsUrl + editRequest.getUsername());
-
-        return jwtService.generateToken(userDetails);
+        return EditResponse.builder().username(newUsername).avatar(avatarsUrl + userId.toString()).build();
     }
 
     @Override
@@ -128,8 +121,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User findById(ObjectId id) {
-        return userRepository.findById(id).orElseThrow(()->new DocumentNotFoundException("User " + id.toHexString() + " not found!"));
+    public User findById(UUID id) {
+        return userRepository.findById(id).orElseThrow(()->new DocumentNotFoundException("User " + id.toString() + " not found!"));
     }
 
     @Override
@@ -145,37 +138,37 @@ public class UserServiceImpl implements UserService {
 
 
     @Override
-    public void addPrivateChatToUser(ObjectId userId, ObjectId chatId) {
+    public void addPrivateChatToUser(UUID userId, UUID chatId) {
         userRepository.addChat(userId, chatId, "privateChats");
     }
 
     @Override
-    public void removePrivateChatFromUser(ObjectId userId, ObjectId chatId) {
+    public void removePrivateChatFromUser(UUID userId, UUID chatId) {
         userRepository.removeChat(userId, chatId, "privateChats");
     }
 
     @Override
-    public void addGroupChatToUser(ObjectId userId, ObjectId groupId) {
+    public void addGroupChatToUser(UUID userId, UUID groupId) {
         userRepository.addChat(userId, groupId, "groupChats");
     }
 
     @Override
-    public void removeGroupChatFromUser(ObjectId userId, ObjectId groupId) {
+    public void removeGroupChatFromUser(UUID userId, UUID groupId) {
         userRepository.removeChat(userId, groupId, "groupChats");
     }
 
     @Override
-    public void addBotChatToUser(ObjectId userId, ObjectId botId){
+    public void addBotChatToUser(UUID userId, UUID botId){
         userRepository.addChat(userId, botId, "botChats");
     }
 
     @Override
-    public void removeBotChatFromUser(ObjectId userId, ObjectId botId){
+    public void removeBotChatFromUser(UUID userId, UUID botId){
         userRepository.removeChat(userId, botId, "botChats");
     }
 
     @Override
-    public void removeChatsFromUser(ObjectId userId, DeleteChatsRequest request) {
+    public void removeChatsFromUser(UUID userId, DeleteChatsRequest request) {
         userRepository.removeChats(userId, request.getPrivateChats(), request.getGroupChats(), request.getBotChats());
     }
 }

@@ -19,8 +19,8 @@ public class InfoController {
     @GetMapping
     public ResponseEntity<InfoResponse> getInfo() {
         InfoResponse infoResponse = InfoResponse.builder()
-                .contact(infoRepository.findAllBySenderNameEquals("contact"))
-                .projects(infoRepository.findAllBySenderNameEquals("projects"))
+                .contact(infoRepository.findAllBySenderIdEquals("contact"))
+                .projects(infoRepository.findAllBySenderIdEquals("projects"))
                 .build();
         return ResponseEntity.ok(infoResponse);
     }

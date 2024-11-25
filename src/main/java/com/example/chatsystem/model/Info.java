@@ -15,5 +15,5 @@ public class Info {
     private String content;
     private MessageType type;
     private String link;
-    private String senderName;
+    private String senderId;
 }

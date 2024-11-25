@@ -1,14 +1,16 @@
 package com.example.chatsystem.service;
 
 import com.example.chatsystem.model.ReadStatus;
-import org.bson.types.ObjectId;
+
+
+import java.util.UUID;
 
 public interface ReadStatusService {
-    void persist(ObjectId userId, String collectionName);
+    void persist(UUID userId, String collectionName);
 
-    ReadStatus getReadStatus(String collectionName, ObjectId userId);
+    ReadStatus getReadStatus(String collectionName, UUID userId);
 
-    void updateTimeRead(String collectionName, ObjectId userId);
+    void updateTimeRead(String collectionName, UUID userId);
 
-    void updateLastMessage(String collectionName, String messageId, ObjectId userId);
+    void updateLastMessage(String collectionName, String messageId, UUID userId);
 }

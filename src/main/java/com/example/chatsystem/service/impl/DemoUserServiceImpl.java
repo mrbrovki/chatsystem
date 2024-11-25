@@ -3,9 +3,10 @@ package com.example.chatsystem.service.impl;
 import com.example.chatsystem.model.DemoUser;
 import com.example.chatsystem.repository.DemoUserRepository;
 import com.example.chatsystem.service.DemoUserService;
-import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 public class DemoUserServiceImpl implements DemoUserService {
@@ -17,7 +18,7 @@ public class DemoUserServiceImpl implements DemoUserService {
     }
 
     @Override
-    public ObjectId findAvailableUserId() {
+    public UUID findAvailableUserId() {
         DemoUser demoUser = demoUserRepository.findFirstByAvailableIsTrue();
         demoUser.setAvailable(false);
         demoUserRepository.save(demoUser);

@@ -1,7 +1,8 @@
 package com.example.chatsystem.service;
 
-import org.bson.types.ObjectId;
+
+import java.util.UUID;
 
 public interface DemoUserService {
-    ObjectId findAvailableUserId();
+    UUID findAvailableUserId();
 }

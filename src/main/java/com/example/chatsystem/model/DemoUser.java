@@ -4,9 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.bson.types.ObjectId;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
+
+import java.util.UUID;
 
 @Document(collection = "demo")
 @Data
@@ -15,6 +18,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Builder
 public class DemoUser {
     @Id
-    private ObjectId id;
+    @Field("_id")
+    private UUID id;
     private boolean available;
 }
