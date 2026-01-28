@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.example.chatsystem.utils.LocalServer.wolLocalServer;
+
 @Service
 public class WebSocketServiceImpl implements WebSocketService {
 
@@ -59,6 +61,8 @@ public class WebSocketServiceImpl implements WebSocketService {
                 .senderId(botId)
                 .build();
         sendBotMessage(senderId, typingMessage);
+
+        //wolLocalServer();
 
         long timestamp = Instant.now().toEpochMilli();
         MessageReceiveDTO userMessageReceiveDTO = buildMessageReceiveDTO(messageSendDTO, senderId, timestamp);
@@ -116,6 +120,8 @@ public class WebSocketServiceImpl implements WebSocketService {
                 .content(String.valueOf(timestamp))
                 .type(messageType)
                 .build();
+
+        //wolLocalServer();
 
         messageService.persistBotFile(messageReceiveDTO, inputStream, senderId, botId);
 

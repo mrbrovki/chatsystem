@@ -7,14 +7,21 @@ import com.example.chatsystem.dto.websocket.MessageSendDTO;
 import com.example.chatsystem.exception.DocumentNotFoundException;
 import com.example.chatsystem.model.MessageType;
 import com.example.chatsystem.repository.BotRepository;
+import com.google.genai.Client;
+import com.google.genai.types.Content;
+import com.google.genai.types.GenerateContentConfig;
+import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.Part;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Example;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.*;
 
 @Service
@@ -52,7 +59,7 @@ public class BotService {
     }
 
 
-    public BotResponse prompt(BotRequest botRequest) {
+    public BotResponse prompt2(BotRequest botRequest) {
         WebClient client = WebClient.create(openaiApiServer);
         Mono<BotResponse> responseDTOMono = client.post()
                 .uri(openaiApiEndpoint)
@@ -62,8 +69,41 @@ public class BotService {
                     httpHeaders.setBearerAuth(openaiApiKey);
                 }).bodyValue(botRequest)
                 .retrieve()
-                .bodyToMono(BotResponse.class);
+                .onStatus(HttpStatusCode::is4xxClientError, response -> {
+                    System.out.println(response.logPrefix());
+                    throw new RuntimeException("Bot is temporarily unavailable!");
+                })
+                .bodyToMono(BotResponse.class)
+                .timeout(Duration.ofSeconds(120));
         return responseDTOMono.block();
+    }
+
+    public BotResponse prompt(BotRequest botRequest) {
+        Client geminiClient = new Client();
+        GenerateContentConfig config =
+                GenerateContentConfig.builder()
+                        .systemInstruction(
+                                Content.fromParts(Part.fromText(botRequest.getMessages().getFirst().getContent())))
+                        .build();
+
+        GenerateContentResponse geminiResponse =
+                geminiClient.models.generateContent(
+                        "gemini-2.5-flash",
+                        botRequest.getMessages().getLast().getContent(),
+                        config);
+
+
+        List<Choice> choices = new ArrayList<>();
+        choices.add(Choice.builder()
+                        .index(0)
+                        .message(Message.builder().role("assistant").content(geminiResponse.text()).build())
+                .build());
+
+        BotResponse botResponse = BotResponse.builder()
+                .choices(choices)
+                .build();
+
+        return botResponse;
     }
 
     public MessageSendDTO handleMessage(List<MessageDTO> messageDTOs, MessageSendDTO messageSendDTO, UUID senderId){
@@ -73,7 +113,7 @@ public class BotService {
 
         //  add training message
         Bot bot = getBotById(botId);
-        messages.add(Message.builder().content(bot.getInfo()).role("user").build());
+        messages.add(Message.builder().content(bot.getInfo()).role("system").build());
 
         messageDTOs.forEach(element -> {
             Message message = new Message();
@@ -90,7 +130,19 @@ public class BotService {
                 .model(model)
                 .messages(messages)
                 .build();
-        BotResponse botResponse = prompt(botRequest);
+
+        BotResponse botResponse;
+        System.out.println(botRequest);
+        try {
+          botResponse = prompt(botRequest);
+        }catch (Exception e){
+            return MessageSendDTO.builder()
+                    .content(e.getMessage())
+                    .receiverId(senderId)
+                    .type(MessageType.TEXT)
+                    .build();
+        }
+
 
         Choice choice = botResponse.getChoices().getFirst();
         String messageContent = choice.getMessage().getContent();

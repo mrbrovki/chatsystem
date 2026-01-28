@@ -6,6 +6,10 @@ target/
 
 src/main/resources/*
 
+.DS_Store
+
+application
+
 ### STS ###
 .apt_generated
 .classpath
