@@ -194,30 +194,33 @@ public class MessageServiceImpl implements MessageService {
         User user = userService.findById(userDetails.getUserId());
 
         List<UUID> privateChats = user.getPrivateChats();
-        HashMap<UUID, List<MessageDTO>> messages = new HashMap<>();
+        HashMap<UUID, List<MessageDTO>> privateHM = new HashMap<>();
 
         for (UUID privateChatId : privateChats) {
             User targetUser = userService.findById(privateChatId);
-            messages.put(targetUser.getId(), getPrivateChatMessages(userDetails.getUserId(), targetUser.getId()));
+            privateHM.put(targetUser.getId(), getPrivateChatMessages(userDetails.getUserId(), targetUser.getId()));
         }
 
         List<UUID> botChats = user.getBotChats();
+        HashMap<UUID, List<MessageDTO>> botsHM = new HashMap<>();
 
         for (UUID botChatId : botChats) {
             Bot bot = botService.getBotById(botChatId);
-            messages.put(bot.getId(), getBotChatMessages(userDetails.getUserId(), botChatId));
+            botsHM.put(bot.getId(), getBotChatMessages(userDetails.getUserId(), botChatId));
         }
 
         List<UUID> groupChats = user.getGroupChats();
-
+        HashMap<UUID, List<MessageDTO>> groupsHM = new HashMap<>();
         for (UUID groupChatId : groupChats) {
             GroupChat groupChat = groupChatRepo.findById(groupChatId).orElseThrow(()->
                     new DocumentNotFoundException("Group " + groupChatId.toString() + " not found"));
-            messages.put(groupChat.getId(), getGroupChatMessages(userDetails.getUserId(), groupChat));
+            groupsHM.put(groupChat.getId(), getGroupChatMessages(userDetails.getUserId(), groupChat));
         }
 
         return MessagesResponse.builder()
-                .messages(messages)
+                .PRIVATE(privateHM)
+                .GROUP(groupsHM)
+                .BOT(botsHM)
                 .build();
     }
 
@@ -304,8 +307,7 @@ public class MessageServiceImpl implements MessageService {
                                         new DocumentNotFoundException("Group " + chatId + " not found"));
                         List<UUID> memberIds = groupChat.getMemberIds();
                         for (UUID memberId : memberIds) {
-                            User member = userService.findById(memberId);
-                            if(member.getId().equals(senderId)){
+                            if(memberId.equals(senderId)){
                                 senderId = memberId;
                             }
                         }

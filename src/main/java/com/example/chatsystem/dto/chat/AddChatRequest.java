@@ -13,6 +13,5 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 public class AddChatRequest {
-    @NotBlank
     private UUID chatId;
 }

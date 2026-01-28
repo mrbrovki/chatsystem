@@ -7,6 +7,7 @@ import com.example.chatsystem.dto.chat.PrivateChatResponse;
 import com.example.chatsystem.dto.user.EditRequest;
 import com.example.chatsystem.dto.user.EditResponse;
 import com.example.chatsystem.exception.DocumentNotFoundException;
+import com.example.chatsystem.model.ChatState;
 import com.example.chatsystem.model.ChatType;
 import com.example.chatsystem.model.User;
 import com.example.chatsystem.repository.UserRepository;
@@ -112,6 +113,8 @@ public class UserServiceImpl implements UserService {
         for (User user : users) {
             PrivateChatResponse privateChatResponse = PrivateChatResponse.builder()
                     .username(user.getUsername())
+                    .id(user.getId())
+                    .state(ChatState.NONE)
                     .avatar(user.getAvatar())
                     .type(ChatType.PRIVATE)
                     .build();

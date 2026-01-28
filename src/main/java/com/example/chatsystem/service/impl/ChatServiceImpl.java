@@ -276,7 +276,13 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public void addPrivateChat(UUID userId, AddChatRequest privateChatDTO) {
-        userService.addPrivateChatToUser(userId, privateChatDTO.getChatId());
+        try {
+            userService.findById(userId);
+            userService.addPrivateChatToUser(userId, privateChatDTO.getChatId());
+        }catch (DocumentNotFoundException e){
+            throw new DocumentNotFoundException(e.getMessage());
+        }
+
     }
 
     @Override

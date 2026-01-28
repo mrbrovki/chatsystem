@@ -14,5 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 public class MessagesResponse {
-    private Map<UUID, List<MessageDTO>> messages;
+    private Map<UUID, List<MessageDTO>> PRIVATE;
+    private Map<UUID, List<MessageDTO>> GROUP;
+    private Map<UUID, List<MessageDTO>> BOT;
 }
